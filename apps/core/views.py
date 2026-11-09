@@ -60,7 +60,7 @@ def course_detail(request, slug):
     outline = full_outline(course) if is_manager else student_outline(course)
     batches = course.batches.filter(
         is_open_for_enrollment=True, status__in=[BatchStatus.UPCOMING, BatchStatus.ONGOING]
-    ).order_by("start_date")
+    ).annotate(taken=Count("batch_students")).order_by("start_date")
     ctx = {
         "course": course,
         "outline": outline,
@@ -82,6 +82,27 @@ def trainer_detail(request, pk):
         "trainer": trainer,
         "courses": trainer.courses.filter(status=CourseStatus.PUBLISHED).select_related("category"),
     })
+
+
+POLICY_TITLES = {
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "refund": "Refund & Cancellation Policy",
+}
+
+
+def policy_page(request, kind):
+    from django.conf import settings as dj_settings
+
+    from .models import SiteSettings
+    from .policies import render_policy
+
+    body = render_policy(kind, SiteSettings.load(), dj_settings.SITE_URL)
+    return render(request, "core/policy.html", {"title": POLICY_TITLES[kind], "body": body, "kind": kind})
+
+
+def contact(request):
+    return render(request, "core/contact.html")
 
 
 def certificate_verify(request, number):

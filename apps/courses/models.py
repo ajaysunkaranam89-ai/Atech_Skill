@@ -575,6 +575,27 @@ class Batch(TimeStampedModel):
     def seats_left(self):
         return max(self.capacity - self.seats_taken, 0)
 
+    @property
+    def is_full(self):
+        return self.seats_left == 0
+
+    def add_student(self, student, force=False):
+        """Add a student if a seat is free. Returns True if the student is (now) in the batch.
+
+        Locks the batch row so two simultaneous payments cannot take the last seat twice.
+        `force=True` lets an administrator exceed capacity deliberately.
+        """
+        from django.db import transaction
+
+        with transaction.atomic():
+            batch = Batch.objects.select_for_update().get(pk=self.pk)
+            if BatchStudent.objects.filter(batch=batch, student=student).exists():
+                return True
+            if not force and batch.batch_students.count() >= batch.capacity:
+                return False
+            BatchStudent.objects.create(batch=batch, student=student)
+            return True
+
 
 class BatchStudent(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="batch_students")

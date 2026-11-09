@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Contact us{% endblock %}
+{% block content %}
+<div class="page-header py-4">
+  <div class="container"><h1 class="h3 fw-bold mb-1">Contact us</h1><p class="mb-0 text-white-50">Questions about a course, batch timings or payments? We're happy to help.</p></div>
+</div>
+<div class="container py-4" style="max-width:960px">
+  <div class="row g-4">
+    <div class="col-md-7">
+      <div class="card card-body p-4 h-100">
+        <h2 class="h5 section-title">{{ academy.legal_business_name|default:academy.site_name }}</h2>
+        <ul class="list-unstyled mb-0">
+          {% if academy.address %}<li class="d-flex gap-3 mb-3"><i class="bi bi-geo-alt fs-5 text-cyan"></i><span>{{ academy.address|linebreaksbr }}</span></li>{% endif %}
+          {% if academy.contact_email %}<li class="d-flex gap-3 mb-3"><i class="bi bi-envelope fs-5 text-cyan"></i><a href="mailto:{{ academy.contact_email }}">{{ academy.contact_email }}</a></li>{% endif %}
+          {% if academy.contact_phone %}<li class="d-flex gap-3 mb-3"><i class="bi bi-telephone fs-5 text-cyan"></i><a href="tel:{{ academy.contact_phone }}">{{ academy.contact_phone }}</a></li>{% endif %}
+          {% if academy.whatsapp_number %}<li class="d-flex gap-3 mb-3"><i class="bi bi-whatsapp fs-5 text-success"></i><a href="https://wa.me/{{ academy.whatsapp_number|cut:'+'|cut:' '|cut:'-' }}" target="_blank" rel="noopener">Chat on WhatsApp</a></li>{% endif %}
+        </ul>
+        {% if not academy.contact_email and not academy.contact_phone and not academy.address %}<p class="text-muted mb-0">Contact details will be published soon.</p>{% endif %}
+      </div>
+    </div>
+    <div class="col-md-5">
+      <div class="card card-body p-4 h-100">
+        <h2 class="h6 fw-bold text-navy">Helpful links</h2>
+        <ul class="list-unstyled small mb-0">
+          <li class="mb-2"><a href="{% url 'core:course_list' %}">Browse courses</a></li>
+          <li class="mb-2"><a href="{% url 'core:refund' %}">Refund &amp; Cancellation Policy</a></li>
+          <li class="mb-2"><a href="{% url 'core:terms' %}">Terms &amp; Conditions</a></li>
+          <li class="mb-2"><a href="{% url 'core:privacy' %}">Privacy Policy</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

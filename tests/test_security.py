@@ -29,7 +29,7 @@ class AuthSecurityTests(LMSTestCase):
     def test_signup_creates_student_only(self):
         r = self.client.post(reverse("accounts:signup"), {
             "first_name": "New", "last_name": "User", "email": "new@x.test", "phone": "",
-            "password1": "Complex!Pass99", "password2": "Complex!Pass99", "role": "super_admin"})
+            "password1": "Complex!Pass99", "password2": "Complex!Pass99", "role": "super_admin", "accept_terms": "on"})
         self.assertEqual(r.status_code, 302)
         u = User.objects.get(email="new@x.test")
         self.assertEqual(u.role, Role.STUDENT)

@@ -120,7 +120,7 @@
           {% if batches %}
           <hr><h6 class="small fw-bold text-uppercase text-muted">Upcoming batches</h6>
           {% for b in batches %}
-          <div class="small mb-2"><i class="bi bi-calendar-event me-1 text-cyan"></i><strong>{{ b.name }}</strong> — starts {{ b.start_date|date:"d M Y" }}{% if b.schedule %}<br><span class="text-muted ms-3">{{ b.schedule }}</span>{% endif %}</div>
+          <div class="small mb-2"><i class="bi bi-calendar-event me-1 text-cyan"></i><strong>{{ b.name }}</strong> — starts {{ b.start_date|date:"d M Y" }} {% if b.taken >= b.capacity %}<span class="badge text-bg-danger">Full</span>{% elif b.capacity|sub:b.taken <= 5 %}<span class="badge text-bg-warning">{{ b.capacity|sub:b.taken }} seat{{ b.capacity|sub:b.taken|pluralize }} left</span>{% endif %}{% if b.schedule %}<br><span class="text-muted ms-3">{{ b.schedule }}</span>{% endif %}</div>
           {% endfor %}
           {% endif %}
         </div>

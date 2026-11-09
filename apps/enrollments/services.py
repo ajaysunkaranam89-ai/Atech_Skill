@@ -60,6 +60,17 @@ def activate_enrollment(student, course, source, batch=None, notify=True):
             enr = Enrollment.objects.select_for_update().get(pk=enr.pk)
         was_valid = enr.is_valid
         enr.activate(source, batch=batch)
+    full = getattr(enr, "_batch_was_full", None)
+    if full is not None:
+        from django.contrib.auth import get_user_model
+
+        admins = get_user_model().objects.filter(is_active=True).filter(role="super_admin")
+        notify_users(
+            admins, NotificationKind.ENROLLMENT, f"Batch full: assign {student.email} manually",
+            f"{student.get_full_name() or student.email} enrolled in {course.title} but batch {full.code} was full. "
+            "Their course access is active; please assign another batch or raise the capacity.",
+            link=f"/dashboard/enrollments/{enr.pk}/edit/", dedupe_key=f"batchfull:{enr.pk}:{full.pk}",
+        )
     if notify and not was_valid:
         notify_users(
             [student], NotificationKind.ENROLLMENT, f"Enrollment confirmed: {course.title}",

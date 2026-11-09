@@ -72,8 +72,26 @@ class SiteSettings(models.Model):
 
     # Notifications
     email_notifications_enabled = models.BooleanField(default=True)
+    require_email_verification = models.BooleanField(
+        default=True,
+        help_text="Students who sign up must confirm their email before enrolling. "
+        "Turn off only if outgoing email (SMTP) is not configured yet.",
+    )
 
     footer_text = models.CharField(max_length=255, blank=True)
+
+    # Legal / policy pages (required by Razorpay for account activation).
+    # Leave blank to publish the standard template filled with your contact details.
+    POLICY_HELP = "Leave blank to use the standard template. Formatting: '## Heading', '* bullet', '**bold**'."
+    legal_business_name = models.CharField(
+        max_length=200, blank=True, help_text="Registered business / proprietor name shown on policy pages"
+    )
+    privacy_policy = models.TextField(blank=True, help_text=POLICY_HELP)
+    terms_conditions = models.TextField("Terms & conditions", blank=True, help_text=POLICY_HELP)
+    refund_policy = models.TextField("Refund & cancellation policy", blank=True, help_text=POLICY_HELP)
+    refund_window_days = models.PositiveSmallIntegerField(
+        default=7, help_text="Used by the standard refund policy template"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

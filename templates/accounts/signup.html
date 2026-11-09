@@ -13,6 +13,11 @@
   {% include "partials/field.html" with field=form.phone %}
   {% include "partials/field.html" with field=form.password1 %}
   {% include "partials/field.html" with field=form.password2 %}
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" name="accept_terms" id="id_accept_terms" {% if form.accept_terms.value %}checked{% endif %} required>
+    <label class="form-check-label small" for="id_accept_terms">I agree to the <a href="{% url 'core:terms' %}" target="_blank">Terms &amp; Conditions</a>, <a href="{% url 'core:privacy' %}" target="_blank">Privacy Policy</a> and <a href="{% url 'core:refund' %}" target="_blank">Refund Policy</a>.</label>
+    {% for e in form.accept_terms.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+  </div>
   <button class="btn btn-cyan w-100 btn-lg" type="submit">Create account</button>
   <p class="small text-center mt-3 mb-0">Already have an account? <a href="{% url 'accounts:login' %}">Log in</a></p>
 </form>

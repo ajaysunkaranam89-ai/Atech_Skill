@@ -10,6 +10,7 @@
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav me-auto ms-lg-4">
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}" href="{% url 'core:course_list' %}">Courses</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'core:contact' %}">Contact</a></li>
         {% if user.is_authenticated %}
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'portal' %}active{% endif %}" href="{% url 'portal:dashboard' %}">My Learning</a></li>
         {% endif %}
@@ -38,6 +39,14 @@
     </div>
   </div>
 </nav>
+{% if user.is_authenticated and user.is_student and not user.email_verified and academy.require_email_verification %}
+<div class="bg-warning-subtle border-bottom border-warning-subtle py-2 small">
+  <div class="container d-flex flex-wrap align-items-center gap-2">
+    <i class="bi bi-envelope-exclamation"></i><span class="me-auto">Please confirm your email <strong>{{ user.email }}</strong> to enroll in courses.</span>
+    <form method="post" action="{% url 'accounts:resend_verification' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-dark py-0">Resend link</button></form>
+  </div>
+</div>
+{% endif %}
 {% block messages %}{% include "partials/messages.html" %}{% endblock %}
 <main>{% block content %}{% endblock %}</main>
 <footer class="site-footer mt-5 py-5">
@@ -54,6 +63,13 @@
           <li><a href="{% url 'core:course_list' %}">All courses</a></li>
           <li><a href="{% url 'accounts:signup' %}">Create account</a></li>
           <li><a href="{% url 'accounts:login' %}">Student login</a></li>
+          <li><a href="{% url 'core:contact' %}">Contact us</a></li>
+        </ul>
+        <h6 class="text-white mt-3">Policies</h6>
+        <ul class="list-unstyled small">
+          <li><a href="{% url 'core:terms' %}">Terms &amp; Conditions</a></li>
+          <li><a href="{% url 'core:privacy' %}">Privacy Policy</a></li>
+          <li><a href="{% url 'core:refund' %}">Refund &amp; Cancellation</a></li>
         </ul>
       </div>
       <div class="col-md-4">
@@ -72,7 +88,7 @@
       </div>
     </div>
     <hr class="border-secondary">
-    <div class="small">&copy; {% now "Y" %} {{ academy.site_name }}. All rights reserved.</div>
+    <div class="small d-flex flex-wrap gap-3"><span>&copy; {% now "Y" %} {{ academy.legal_business_name|default:academy.site_name }}. All rights reserved.</span><a href="{% url 'core:terms' %}">Terms</a><a href="{% url 'core:privacy' %}">Privacy</a><a href="{% url 'core:refund' %}">Refunds</a></div>
   </div>
 </footer>
 {% endblock %}

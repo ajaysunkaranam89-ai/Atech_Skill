@@ -10,6 +10,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from apps.core import audit
 
 from . import ratelimit
+from .verification import email_token, send_verification_email, verification_required
 from .forms import LoginForm, ProfileForm, SignupForm, StudentProfileForm
 from .models import StudentProfile
 
@@ -51,7 +52,16 @@ def signup(request):
         user = form.save()
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         audit.log(request, "signup", user)
-        messages.success(request, "Welcome to A TechSkills Academy! Your account is ready.")
+        if verification_required(user):
+            try:
+                send_verification_email(user, force=True)
+                messages.success(request, f"Welcome! We've sent a confirmation link to {user.email}. "
+                                          "Please verify your email to enroll in courses.")
+            except Exception:
+                messages.warning(request, "Your account is ready, but we couldn't send the confirmation email. "
+                                          "Use 'Resend' on your dashboard to try again.")
+        else:
+            messages.success(request, "Welcome to A TechSkills Academy! Your account is ready.")
         nxt = request.GET.get("next")
         if nxt and url_has_allowed_host_and_scheme(nxt, {request.get_host()}, request.is_secure()):
             return redirect(nxt)
@@ -93,3 +103,54 @@ class PasswordChangeView(auth_views.PasswordChangeView):
         messages.success(self.request, "Password changed.")
         audit.log(self.request, "password_change", self.request.user)
         return super().form_valid(form)
+
+
+def verify_email(request, uidb64, token):
+    from django.utils.encoding import force_str
+    from django.utils.http import urlsafe_base64_decode
+
+    from .models import User
+
+    try:
+        user = User.objects.get(pk=force_str(urlsafe_base64_decode(uidb64)))
+    except (ValueError, TypeError, OverflowError, User.DoesNotExist):
+        user = None
+    if user is not None and user.email_verified:
+        messages.info(request, "Your email is already verified.")
+    elif user is not None and email_token.check_token(user, token):
+        user.email_verified = True
+        user.save(update_fields=["email_verified"])
+        audit.log(request, "email_verified", user)
+        messages.success(request, "Thank you! Your email is verified. You can now enroll in courses.")
+    else:
+        messages.error(request, "This verification link is invalid or has expired. Log in and request a new one.")
+        return redirect("accounts:verify_pending" if request.user.is_authenticated else "accounts:login")
+    return redirect("portal:dashboard" if request.user.is_authenticated else "accounts:login")
+
+
+@login_required
+def verify_pending(request):
+    nxt = request.GET.get("next", "")
+    if not url_has_allowed_host_and_scheme(nxt, {request.get_host()}, request.is_secure()):
+        nxt = ""
+    if not verification_required(request.user):
+        return redirect(nxt or "portal:dashboard")
+    return render(request, "accounts/verify_pending.html", {"next": nxt})
+
+
+@login_required
+def resend_verification(request):
+    if request.method != "POST":
+        return redirect("accounts:verify_pending")
+    if not verification_required(request.user):
+        return redirect("portal:dashboard")
+    try:
+        sent = send_verification_email(request.user)
+    except Exception:
+        messages.error(request, "We couldn't send the email right now. Please try again later or contact the academy.")
+        return redirect("accounts:verify_pending")
+    if sent:
+        messages.success(request, f"Confirmation link sent to {request.user.email}. Check your inbox (and spam folder).")
+    else:
+        messages.info(request, "A link was sent less than a minute ago. Please wait a moment before trying again.")
+    return redirect("accounts:verify_pending")

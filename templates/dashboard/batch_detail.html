@@ -11,7 +11,7 @@
 </div>
 <div class="row g-4">
   <div class="col-lg-7">
-    <div class="card"><div class="card-header fw-semibold">Students ({{ members|length }}/{{ batch.capacity }})</div>
+    <div class="card"><div class="card-header fw-semibold">Students ({{ members|length }}/{{ batch.capacity }}){% if batch.is_full %} <span class="badge text-bg-danger">Full</span>{% endif %}</div>
       <ul class="list-group list-group-flush">
         {% for m in members %}
         <li class="list-group-item d-flex align-items-center"><span class="me-auto">{{ m.student.get_full_name|default:m.student.email }} <span class="small text-muted">{{ m.student.email }}</span></span>
@@ -21,7 +21,8 @@
       </ul>
       {% if user.can_manage_all_content %}
       <div class="card-footer">
-        <form method="post" class="d-flex gap-2">{% csrf_token %}{{ form.student }}<button class="btn btn-sm btn-primary text-nowrap">Add student</button></form>
+        <form method="post" class="d-flex flex-wrap gap-2 align-items-center">{% csrf_token %}{{ form.student }}<button class="btn btn-sm btn-primary text-nowrap">Add student</button>
+          {% if batch.is_full %}<div class="form-check small"><input class="form-check-input" type="checkbox" name="force" value="1" id="force"><label class="form-check-label" for="force">Add even if full</label></div>{% endif %}</form>
         <div class="form-text">Only students with an active enrollment in this course are listed.</div>
       </div>
       {% endif %}

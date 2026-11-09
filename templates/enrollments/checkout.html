@@ -13,7 +13,7 @@
         <label class="form-label fw-semibold" for="batch-select">Choose your batch (live classes)</label>
         <select id="batch-select" class="form-select">
           <option value="">No preference / recordings only</option>
-          {% for b in batches %}<option value="{{ b.pk }}" {% if batch and batch.pk == b.pk %}selected{% endif %}>{{ b.name }} — starts {{ b.start_date|date:"d M Y" }}{% if b.schedule %} ({{ b.schedule }}){% endif %}</option>{% endfor %}
+          {% for b in batches %}{% if b.taken >= b.capacity %}<option value="{{ b.pk }}" disabled>{{ b.name }} — starts {{ b.start_date|date:"d M Y" }} — FULL</option>{% else %}<option value="{{ b.pk }}" {% if batch and batch.pk == b.pk %}selected{% endif %}>{{ b.name }} — starts {{ b.start_date|date:"d M Y" }}{% if b.schedule %} ({{ b.schedule }}){% endif %} · {{ b.capacity|sub:b.taken }} seat{{ b.capacity|sub:b.taken|pluralize }} left</option>{% endif %}{% endfor %}
         </select>
       </div>
       {% endif %}
@@ -70,7 +70,8 @@
           <div class="d-flex justify-content-between"><span>Course fee</span><span>{{ course.price|inr }}</span></div>
           {% if course.discounted_price is not None %}<div class="d-flex justify-content-between text-success"><span>Discount</span><span>−{{ course.discount_percent }}%</span></div>{% endif %}
           <hr><div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>{{ course.effective_price|inr }}</span></div>
-          <p class="small text-muted mt-2 mb-0"><i class="bi bi-shield-lock me-1"></i>Payments are verified on our server. Access is granted only after verification.</p>
+          <p class="small text-muted mt-2 mb-1"><i class="bi bi-shield-lock me-1"></i>Payments are verified on our server. Access is granted only after verification.</p>
+          <p class="small text-muted mb-0">By enrolling you agree to our <a href="{% url 'core:terms' %}" target="_blank">Terms</a> and <a href="{% url 'core:refund' %}" target="_blank">Refund &amp; Cancellation Policy</a>.</p>
         </div>
       </div>
     </div>

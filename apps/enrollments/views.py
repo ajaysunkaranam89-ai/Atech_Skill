@@ -4,6 +4,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -11,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from apps.accounts.forms import BootstrapMixin
+from apps.accounts.verification import verified_email_required
 from apps.core import audit
 from apps.core.models import SiteSettings
 from apps.courses.access import valid_enrollment
@@ -57,27 +59,51 @@ class UpiForm(BootstrapMixin, forms.ModelForm):
 
 
 def _open_batches(course):
-    return course.batches.filter(is_open_for_enrollment=True, status__in=[BatchStatus.UPCOMING, BatchStatus.ONGOING]).order_by("start_date")
+    return (
+        course.batches.filter(is_open_for_enrollment=True, status__in=[BatchStatus.UPCOMING, BatchStatus.ONGOING])
+        .annotate(taken=Count("batch_students"))
+        .order_by("start_date")
+    )
+
+
+class BatchUnavailable(Exception):
+    pass
 
 
 def _selected_batch(request, course):
+    """The batch the student picked, or None for 'no preference'.
+
+    Raises BatchUnavailable if they picked a batch that is closed or full, so we
+    never silently take money for a seat that does not exist.
+    """
     bid = request.POST.get("batch") or request.GET.get("batch")
     if not bid:
         return None
     try:
-        return _open_batches(course).get(pk=int(bid))
+        batch = _open_batches(course).get(pk=int(bid))
     except (ValueError, Batch.DoesNotExist):
+        raise BatchUnavailable("The selected batch is no longer open for enrollment. Please choose another.")
+    if batch.taken >= batch.capacity and not batch.batch_students.filter(student=request.user).exists():
+        raise BatchUnavailable(f"Batch {batch.name} is full. Please choose another batch.")
+    return batch
+
+
+def _safe_selected_batch(request, course):
+    try:
+        return _selected_batch(request, course)
+    except BatchUnavailable:
         return None
 
 
 @login_required
+@verified_email_required
 def checkout(request, slug):
     course = get_object_or_404(Course, slug=slug, status=CourseStatus.PUBLISHED)
     if valid_enrollment(request.user, course):
         messages.info(request, "You are already enrolled in this course.")
         return redirect("portal:course_home", slug)
     site = SiteSettings.load()
-    batch = _selected_batch(request, course)
+    batch = _safe_selected_batch(request, course)
     upi_form = UpiForm(expected_amount=course.effective_price, initial={"amount": course.effective_price, "payer_name": request.user.get_full_name()})
     pending_upi = UpiPaymentSubmission.objects.filter(student=request.user, course=course, status=UpiStatus.PENDING).first()
     return render(request, "enrollments/checkout.html", {
@@ -88,11 +114,17 @@ def checkout(request, slug):
 
 @login_required
 @require_POST
+@verified_email_required
 def enroll_free(request, slug):
     course = get_object_or_404(Course, slug=slug, status=CourseStatus.PUBLISHED)
     if not course.is_free:
         return HttpResponseBadRequest("This course is not free")
-    services.enroll_free(request.user, course, batch=_selected_batch(request, course))
+    try:
+        batch = _selected_batch(request, course)
+    except BatchUnavailable as e:
+        messages.error(request, str(e))
+        return redirect("enrollments:checkout", slug)
+    services.enroll_free(request.user, course, batch=batch)
     audit.log(request, "enroll_free", course)
     messages.success(request, f"You are enrolled in {course.title}.")
     return redirect("portal:course_home", slug)
@@ -100,6 +132,7 @@ def enroll_free(request, slug):
 
 @login_required
 @require_POST
+@verified_email_required
 def razorpay_create_order(request, slug):
     course = get_object_or_404(Course, slug=slug, status=CourseStatus.PUBLISHED)
     site = SiteSettings.load()
@@ -109,6 +142,8 @@ def razorpay_create_order(request, slug):
         return JsonResponse({"ok": False, "error": "Already enrolled."}, status=400)
     try:
         payment = services.create_razorpay_order(request.user, course, batch=_selected_batch(request, course))
+    except BatchUnavailable as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
     except services.PaymentError as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
     return JsonResponse({
@@ -162,24 +197,30 @@ def razorpay_webhook(request):
 
 @login_required
 @require_POST
+@verified_email_required
 def upi_submit(request, slug):
     course = get_object_or_404(Course, slug=slug, status=CourseStatus.PUBLISHED)
     site = SiteSettings.load()
     if not site.upi_enabled:
         messages.error(request, "UPI payments are currently disabled.")
         return redirect("enrollments:checkout", slug)
+    try:
+        selected = _selected_batch(request, course)
+    except BatchUnavailable as e:
+        messages.error(request, str(e))
+        return redirect("enrollments:checkout", slug)
     form = UpiForm(request.POST, request.FILES, expected_amount=course.effective_price)
     if form.is_valid():
         sub = form.save(commit=False)
         sub.student = request.user
         sub.course = course
-        sub.batch = _selected_batch(request, course)
+        sub.batch = selected
         sub.save()
         services.get_or_create_pending(request.user, course, sub.batch)
         audit.log(request, "upi_submit", sub, {"utr": sub.utr_number, "amount": str(sub.amount)})
         messages.success(request, "Payment details submitted. Your enrollment will be activated after verification.")
         return redirect("portal:payments")
     return render(request, "enrollments/checkout.html", {
-        "course": course, "academy": site, "batches": _open_batches(course), "batch": _selected_batch(request, course),
+        "course": course, "academy": site, "batches": _open_batches(course), "batch": selected,
         "upi_form": form, "razorpay_ready": site.razorpay_enabled and services.razorpay_configured(), "show_upi": True,
     })

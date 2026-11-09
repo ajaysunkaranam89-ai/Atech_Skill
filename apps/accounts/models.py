@@ -41,6 +41,8 @@ class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT, db_index=True)
     phone = models.CharField(max_length=20, blank=True)
+    # Self-registered students start unverified; accounts created by administrators are trusted.
+    email_verified = models.BooleanField(default=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

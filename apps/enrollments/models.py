@@ -67,13 +67,17 @@ class Enrollment(TimeStampedModel):
             days = self.course.access_days if self.course_id else 0
             self.expires_at = now + timedelta(days=days) if days else None
         self.source = self.source or source
-        if batch is not None:
-            self.batch = batch
+        target = batch if batch is not None else self.batch
+        if target is not None:
+            if target.add_student(self.student):
+                self.batch = target
+            else:
+                # Paid, but the batch filled up in the meantime: keep access, flag for the admin.
+                self.batch = None
+                self._batch_was_full = target
+                note = f"Batch {target.code} was full at activation - assign a batch manually."
+                self.notes = (self.notes + " " + note).strip()[:255]
         self.save()
-        if self.batch_id:
-            from apps.courses.models import BatchStudent
-
-            BatchStudent.objects.get_or_create(batch=self.batch, student=self.student)
         return self
 
 

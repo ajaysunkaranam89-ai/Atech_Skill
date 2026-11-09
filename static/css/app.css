@@ -131,3 +131,4 @@ footer.site-footer a:hover { color: var(--ts-cyan-2); }
 .trainer-bio p { line-height: 1.7; }
 .trainer-bio ol li { margin-bottom: .35rem; }
 a.hero-badge:hover { color: #fff; }
+.policy-body .check-list li { width: 100%; }

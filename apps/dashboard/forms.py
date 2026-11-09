@@ -372,6 +372,9 @@ class EnrollmentForm(StyledModelForm):
         b, c = cd.get("batch"), cd.get("course")
         if b and c and b.course_id != c.id:
             self.add_error("batch", "Batch belongs to a different course.")
+        student = cd.get("student")
+        if b and student and b.is_full and not b.batch_students.filter(student=student).exists():
+            self.add_error("batch", f"{b.code} is full ({b.capacity} seats). Raise its capacity first or pick another batch.")
         if c and cd.get("student") and not self.instance.pk:
             if Enrollment.objects.filter(student=cd["student"], course=c).exists():
                 self.add_error("course", "This student already has an enrollment for this course. Edit it instead.")
@@ -454,7 +457,19 @@ class SiteSettingsForm(StyledModelForm):
             "about_text": forms.Textarea(attrs={"rows": 4}),
             "address": forms.Textarea(attrs={"rows": 2}),
             "upi_instructions": forms.Textarea(attrs={"rows": 3}),
+            "privacy_policy": forms.Textarea(attrs={"rows": 8}),
+            "terms_conditions": forms.Textarea(attrs={"rows": 8}),
+            "refund_policy": forms.Textarea(attrs={"rows": 8}),
         }
+
+    fieldsets = [
+        ("Branding", ["site_name", "tagline", "hero_title", "hero_subtitle", "about_text", "logo", "footer_text"]),
+        ("Contact details", ["legal_business_name", "contact_email", "contact_phone", "whatsapp_number", "address"]),
+        ("Social links", ["facebook_url", "instagram_url", "linkedin_url", "youtube_url"]),
+        ("Payments", ["razorpay_enabled", "upi_enabled", "upi_id", "upi_payee_name", "upi_qr_code", "upi_instructions"]),
+        ("Notifications & sign-up", ["email_notifications_enabled", "require_email_verification"]),
+        ("Policy pages (Razorpay requires these)", ["refund_window_days", "terms_conditions", "privacy_policy", "refund_policy"]),
+    ]
 
 
 __all__ = [n for n in dir() if n.endswith("Form")] + ["ResourceType"]

@@ -40,6 +40,9 @@ class LoginForm(BootstrapMixin, AuthenticationForm):
 class SignupForm(BootstrapMixin, forms.ModelForm):
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
     password2 = forms.CharField(label="Confirm password", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
+    accept_terms = forms.BooleanField(
+        required=True, error_messages={"required": "Please accept the Terms & Conditions and Privacy Policy."}
+    )
 
     class Meta:
         model = User
@@ -71,6 +74,7 @@ class SignupForm(BootstrapMixin, forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = Role.STUDENT
+        user.email_verified = False
         user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
@@ -107,7 +111,7 @@ class AdminUserForm(BootstrapMixin, forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email", "phone", "role", "is_active"]
+        fields = ["first_name", "last_name", "email", "phone", "role", "is_active", "email_verified"]
 
     def __init__(self, *args, actor=None, **kwargs):
         super().__init__(*args, **kwargs)

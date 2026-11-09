@@ -165,7 +165,10 @@ def batch_detail(request, pk):
     ).exclude(batch_memberships__batch=batch).distinct()
     if request.method == "POST" and has_cap(request.user, "content") and form.is_valid():
         s = form.cleaned_data["student"]
-        BatchStudent.objects.get_or_create(batch=batch, student=s)
+        if not batch.add_student(s, force=request.POST.get("force") == "1"):
+            messages.error(request, f"{batch.code} is full ({batch.capacity} seats). Increase the capacity, or tick "
+                                    "'Add even if full' to exceed it.")
+            return redirect("dashboard:batch_detail", pk)
         Enrollment.objects.filter(student=s, course=batch.course).update(batch=batch)
         audit.log(request, "batch_add_student", batch, {"student": s.email})
         messages.success(request, f"{s} added to {batch.code}.")

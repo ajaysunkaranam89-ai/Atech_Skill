@@ -242,9 +242,7 @@ class EnrollmentUpdate(ManageUpdateView):
             form.instance.activated_at = timezone.now()
         response = super().form_valid(form)
         if self.object.batch_id:
-            from apps.courses.models import BatchStudent
-
-            BatchStudent.objects.get_or_create(batch=self.object.batch, student=self.object.student)
+            self.object.batch.add_student(self.object.student, force=True)  # capacity validated by the form
         return response
 
 

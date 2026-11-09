@@ -141,3 +141,11 @@ def first_paragraph(value):
         if b and not b.startswith(("#", "*", "-", "•")) and not _NUM_RE.match(b):
             return b
     return ""
+
+
+@register.filter(name="sub")
+def subtract(value, arg):
+    try:
+        return max(int(value) - int(arg), 0)
+    except (TypeError, ValueError):
+        return value

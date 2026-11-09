@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-header py-4">
+  <div class="container"><h1 class="h3 fw-bold mb-0">{{ title }}</h1></div>
+</div>
+<div class="container py-4" style="max-width:900px">
+  <div class="card card-body p-4 p-md-5 trainer-bio policy-body">{{ body|rich_text }}</div>
+  <p class="small text-muted mt-3">See also:
+    {% if kind != "terms" %}<a href="{% url 'core:terms' %}">Terms &amp; Conditions</a> · {% endif %}
+    {% if kind != "privacy" %}<a href="{% url 'core:privacy' %}">Privacy Policy</a> · {% endif %}
+    {% if kind != "refund" %}<a href="{% url 'core:refund' %}">Refund &amp; Cancellation</a> · {% endif %}
+    <a href="{% url 'core:contact' %}">Contact us</a></p>
+</div>
+{% endblock %}

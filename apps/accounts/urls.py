@@ -11,6 +11,9 @@ urlpatterns = [
     path("signup/", views.signup, name="signup"),
     path("after-login/", views.after_login, name="after_login"),
     path("profile/", views.profile, name="profile"),
+    path("verify-email/", views.verify_pending, name="verify_pending"),
+    path("verify-email/resend/", views.resend_verification, name="resend_verification"),
+    path("verify-email/<uidb64>/<token>/", views.verify_email, name="verify_email"),
     path("password/change/", views.PasswordChangeView.as_view(), name="password_change"),
     path(
         "password/reset/",
