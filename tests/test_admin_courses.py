@@ -185,3 +185,20 @@ class ModuleLessonTests(LMSTestCase):
         self.client.post(url, {"confirm_text": "Docker basics"})
         self.assertFalse(Lesson.objects.filter(pk=lesson.pk).exists())
         self.assertTrue(Enrollment.objects.filter(student=self.student, course=c).exists())
+
+
+class InlineCategoryTests(LMSTestCase):
+    def test_create_category_from_course_form(self):
+        from apps.courses.models import CourseCategory
+
+        self.login(self.owner)
+        base = {"title": "AWS Basics", "short_description": "x", "description": "x", "price": "0", "level": "all",
+                "mode": "hybrid", "language": "English", "access_days": "0", "duration_hours": "0", "status": "draft"}
+        r = self.client.get(reverse("dashboard:course_add"))
+        self.assertContains(r, "No categories yet")
+        self.client.post(reverse("dashboard:course_add"), {**base, "new_category": "Cloud"})
+        self.assertEqual(Course.objects.get(title="AWS Basics").category.name, "Cloud")
+        # existing name (case-insensitive) is reused, not duplicated
+        self.client.post(reverse("dashboard:course_add"), {**base, "title": "Azure Basics", "new_category": "cloud"})
+        self.assertEqual(CourseCategory.objects.count(), 1)
+        self.assertEqual(Course.objects.get(title="Azure Basics").category.name, "Cloud")

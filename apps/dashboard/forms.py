@@ -118,8 +118,13 @@ class CourseForm(StyledModelForm):
             "trainers": forms.SelectMultiple(attrs={"size": 5}),
         }
 
+    new_category = forms.CharField(
+        max_length=120, required=False, label="…or create a new category",
+        help_text="Type a name (e.g. DevOps, Cloud, Python) to create it and use it for this course.",
+    )
+
     fieldsets = [
-        ("Basics", ["title", "category", "short_description", "description", "thumbnail", "promo_video_url"]),
+        ("Basics", ["title", "category", "new_category", "short_description", "description", "thumbnail", "promo_video_url"]),
         ("Pricing", ["price", "discounted_price", "access_days"]),
         ("Format", ["duration_text", "duration_hours", "level", "mode", "language"]),
         ("Curriculum", ["syllabus", "learning_objectives", "prerequisites", "target_audience"]),
@@ -128,7 +133,35 @@ class CourseForm(StyledModelForm):
 
     def limit_querysets(self):
         self.fields["trainers"].queryset = TrainerProfile.objects.select_related("user").filter(user__is_active=True)
-        self.fields["category"].queryset = CourseCategory.objects.filter(is_active=True)
+        cats = CourseCategory.objects.filter(is_active=True)
+        self.fields["category"].queryset = cats
+        if not cats.exists():
+            self.fields["category"].empty_label = "No categories yet — create one below"
+        else:
+            self.fields["category"].empty_label = "— Select a category —"
+        if not self.fields["trainers"].queryset.exists():
+            self.fields["trainers"].help_text = (
+                "No trainers yet. Add them under Administrators (role: Trainer); you can assign them later."
+            )
+
+    def clean(self):
+        cd = super().clean()
+        name = (cd.get("new_category") or "").strip()
+        if name and cd.get("category"):
+            self.add_error("new_category", "Choose an existing category or type a new one, not both.")
+        return cd
+
+    def save(self, commit=True):
+        name = (self.cleaned_data.get("new_category") or "").strip()
+        if name:
+            cat = CourseCategory.objects.filter(name__iexact=name).first()
+            if cat is None:
+                cat = CourseCategory.objects.create(name=name)
+            elif not cat.is_active:
+                cat.is_active = True
+                cat.save(update_fields=["is_active"])
+            self.instance.category = cat
+        return super().save(commit=commit)
 
 
 class ModuleForm(OptionalNumbersMixin, StyledModelForm):
