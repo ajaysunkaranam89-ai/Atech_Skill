@@ -18,6 +18,13 @@
         {% if not academy.contact_email and not academy.contact_phone and not academy.address %}<p class="text-muted mb-0">Contact details will be published soon.</p>{% endif %}
       </div>
     </div>
+    <div class="col-12 order-md-first">
+      <div class="card card-body p-4" id="enquiry">
+        <h2 class="h5 section-title mb-1">Send us an enquiry</h2>
+        <p class="small text-muted">Ask about courses, demo classes, batch timings or fees. We usually respond within a few hours.</p>
+        {% include "partials/enquiry_form.html" with form=enquiry_form button="Send enquiry" %}
+      </div>
+    </div>
     <div class="col-md-5">
       <div class="card card-body p-4 h-100">
         <h2 class="h6 fw-bold text-navy">Helpful links</h2>

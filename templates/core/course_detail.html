@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% load lms %}
-{% block title %}{{ course.title }}{% endblock %}
-{% block meta_description %}{{ course.short_description }}{% endblock %}
+{% block full_title %}{% if course.seo_title %}{{ course.seo_title }}{% else %}{{ course.title }} – Online Course{% if academy.city %} in {{ academy.city }}{% endif %} · {{ academy.site_name }}{% endif %}{% endblock %}
+{% block meta_description %}{{ course.seo_description|default:course.short_description|truncatechars:160 }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ course.title }} – {{ academy.site_name }}{% endblock %}
+{% block og_description %}{{ course.seo_description|default:course.short_description|truncatechars:200 }}{% endblock %}
+{% block og_image %}{% if course.thumbnail %}{{ SITE_URL }}{{ course.thumbnail.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+{% block structured_data %}{% jsonld structured_data %}{% endblock %}
 {% block content %}
 {% if preview %}<div class="preview-banner py-2 text-center small"><i class="bi bi-eye me-1"></i>Admin preview — this course is <strong>{{ course.get_status_display }}</strong> and not visible to the public.</div>{% endif %}
 <div class="page-header">
@@ -125,6 +130,15 @@
           {% endif %}
         </div>
       </div>
+      {% if not enrollment and enquiry_form %}
+      <div class="card shadow-sm mt-4" id="enquiry">
+        <div class="card-body">
+          <h2 class="h6 fw-bold text-navy mb-1"><i class="bi bi-headset me-1 text-cyan"></i>Talk to a course advisor</h2>
+          <p class="small text-muted">Free demo class, batch timings, fees or career guidance – we'll call you.</p>
+          {% include "partials/enquiry_form.html" with form=enquiry_form course=course compact=1 button="Book a free demo" %}
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

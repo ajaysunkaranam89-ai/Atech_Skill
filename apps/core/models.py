@@ -81,6 +81,20 @@ class SiteSettings(models.Model):
 
     footer_text = models.CharField(max_length=255, blank=True)
 
+    # SEO & analytics
+    seo_home_title = models.CharField(
+        "Home page SEO title", max_length=70, blank=True,
+        help_text="e.g. 'IT Training Institute in Bangalore | CCNA, AWS, DevOps, Kubernetes'",
+    )
+    seo_home_description = models.CharField("Home page SEO description", max_length=170, blank=True)
+    city = models.CharField(max_length=80, blank=True, help_text="City you serve, used in search snippets and local SEO")
+    google_site_verification = models.CharField(
+        max_length=100, blank=True, help_text="Google Search Console > HTML tag > content value only"
+    )
+    google_analytics_id = models.CharField(
+        "Google Analytics 4 ID", max_length=20, blank=True, help_text="e.g. G-ABC123XYZ. Leave blank to disable."
+    )
+
     # Legal / policy pages (required by Razorpay for account activation).
     # Leave blank to publish the standard template filled with your contact details.
     POLICY_HELP = "Leave blank to use the standard template. Formatting: '## Heading', '* bullet', '**bold**'."
@@ -149,3 +163,64 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.created_at:%Y-%m-%d %H:%M} {self.actor} {self.action} {self.object_type}#{self.object_id}"
+
+
+class EnquiryStatus(models.TextChoices):
+    NEW = "new", "New"
+    CONTACTED = "contacted", "Contacted"
+    DEMO = "demo_scheduled", "Demo scheduled"
+    CONVERTED = "converted", "Converted (enrolled)"
+    CLOSED = "closed", "Not interested / closed"
+
+
+class Enquiry(models.Model):
+    """A lead captured from the public site (course page, contact page, demo request)."""
+
+    KIND_CHOICES = [("demo", "Free demo"), ("callback", "Call back"), ("question", "Question"), ("batch", "Batch timings")]
+
+    name = models.CharField(max_length=120)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField(blank=True)
+    course = models.ForeignKey("courses.Course", null=True, blank=True, on_delete=models.SET_NULL, related_name="enquiries")
+    kind = models.CharField("I'm interested in", max_length=20, choices=KIND_CHOICES, default="demo")
+    message = models.TextField(blank=True)
+    preferred_time = models.CharField(max_length=60, blank=True)
+    status = models.CharField(max_length=20, choices=EnquiryStatus.choices, default=EnquiryStatus.NEW, db_index=True)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="assigned_enquiries"
+    )
+    notes = models.TextField(blank=True, help_text="Internal follow-up notes")
+    follow_up_on = models.DateField(null=True, blank=True)
+    # Attribution (first touch): where the visitor came from
+    source_page = models.CharField(max_length=300, blank=True)
+    referrer = models.CharField(max_length=300, blank=True)
+    utm_source = models.CharField(max_length=100, blank=True)
+    utm_medium = models.CharField(max_length=100, blank=True)
+    utm_campaign = models.CharField(max_length=100, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "Enquiries"
+
+    def __str__(self):
+        return f"{self.name} ({self.phone})"
+
+    @property
+    def source_label(self):
+        if self.utm_source:
+            return " / ".join(x for x in [self.utm_source, self.utm_medium, self.utm_campaign] if x)
+        if self.referrer:
+            from urllib.parse import urlparse
+
+            host = urlparse(self.referrer).netloc.replace("www.", "")
+            return host or "Referral"
+        return "Direct"
+
+    @property
+    def whatsapp_phone(self):
+        digits = "".join(ch for ch in self.phone if ch.isdigit())
+        return ("91" + digits) if len(digits) == 10 else digits

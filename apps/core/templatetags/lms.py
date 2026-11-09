@@ -149,3 +149,22 @@ def subtract(value, arg):
         return max(int(value) - int(arg), 0)
     except (TypeError, ValueError):
         return value
+
+
+@register.simple_tag
+def jsonld(data):
+    """Emit schema.org data as <script type="application/ld+json">, escaped like json_script."""
+    import json
+
+    from django.core.serializers.json import DjangoJSONEncoder
+    from django.utils.html import _json_script_escapes
+    from django.utils.safestring import mark_safe
+
+    if not data:
+        return ""
+    items = data if isinstance(data, (list, tuple)) else [data]
+    out = []
+    for d in items:
+        payload = json.dumps(d, cls=DjangoJSONEncoder, ensure_ascii=False).translate(_json_script_escapes)
+        out.append(f'<script type="application/ld+json">{payload}</script>')
+    return mark_safe("\n".join(out))

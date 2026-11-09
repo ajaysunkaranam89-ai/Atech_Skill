@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Our trainers{% endblock %}
+{% block meta_description %}Meet the industry practitioners who teach at {{ academy.site_name }}.{% endblock %}
+{% block og_title %}Our trainers – {{ academy.site_name }}{% endblock %}
+{% block content %}
+<div class="page-header py-4">
+  <div class="container"><h1 class="h3 fw-bold mb-1">Our trainers</h1><p class="mb-0 text-white-50">Learn from practitioners with real enterprise experience.</p></div>
+</div>
+<div class="container py-4">
+  <div class="row g-4">
+    {% for t in items %}<div class="col-md-6 col-lg-4">{% include "partials/trainer_card.html" %}</div>
+    {% empty %}<div class="col-12"><div class="card"><div class="empty-state"><i class="bi bi-person-badge"></i><p class="mt-2 mb-0">Trainer profiles will be published soon.</p></div></div></div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

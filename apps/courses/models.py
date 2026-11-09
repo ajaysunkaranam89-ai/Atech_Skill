@@ -123,6 +123,14 @@ class Course(TimeStampedModel):
         help_text="Issue the certificate automatically when a student completes every published lesson",
     )
 
+    seo_title = models.CharField(
+        "SEO title", max_length=70, blank=True,
+        help_text="Shown in Google results (max ~60 characters). e.g. 'AWS Cloud Training in Bangalore | Online Live Classes'",
+    )
+    seo_description = models.CharField(
+        "SEO description", max_length=170, blank=True,
+        help_text="Google snippet (max ~155 characters). Mention the skill, format, location and a benefit.",
+    )
     status = models.CharField(max_length=20, choices=CourseStatus.choices, default=CourseStatus.DRAFT, db_index=True)
     published_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(

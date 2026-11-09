@@ -108,6 +108,7 @@ class CourseForm(StyledModelForm):
             "price", "discounted_price", "duration_text", "duration_hours", "level", "mode", "language",
             "syllabus", "learning_objectives", "prerequisites", "target_audience",
             "trainers", "access_days", "is_featured", "certificate_enabled", "auto_issue_certificate", "status",
+            "seo_title", "seo_description",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 6}),
@@ -129,6 +130,7 @@ class CourseForm(StyledModelForm):
         ("Format", ["duration_text", "duration_hours", "level", "mode", "language"]),
         ("Curriculum", ["syllabus", "learning_objectives", "prerequisites", "target_audience"]),
         ("Trainers & publishing", ["trainers", "is_featured", "certificate_enabled", "auto_issue_certificate", "status"]),
+        ("SEO (Google search)", ["seo_title", "seo_description"]),
     ]
 
     def limit_querysets(self):
@@ -449,6 +451,24 @@ class AnnouncementForm(StyledModelForm):
 
 
 class SiteSettingsForm(StyledModelForm):
+    def clean_google_analytics_id(self):
+        import re
+
+        v = (self.cleaned_data.get("google_analytics_id") or "").strip().upper()
+        if v and not re.fullmatch(r"G-[A-Z0-9]{4,15}", v):
+            raise forms.ValidationError("Enter a Google Analytics 4 measurement ID like G-ABC123XYZ.")
+        return v
+
+    def clean_google_site_verification(self):
+        import re
+
+        v = (self.cleaned_data.get("google_site_verification") or "").strip()
+        m = re.search(r'content="([^"]+)"', v)  # accept the whole <meta> tag pasted from Search Console
+        v = m.group(1) if m else v
+        if v and not re.fullmatch(r"[A-Za-z0-9_\-]{10,100}", v):
+            raise forms.ValidationError("Paste the verification code (the content=\"...\" value) from Google Search Console.")
+        return v
+
     def clean_gstin(self):
         import re
 
@@ -484,6 +504,7 @@ class SiteSettingsForm(StyledModelForm):
         ("Branding", ["site_name", "tagline", "hero_title", "hero_subtitle", "about_text", "logo", "footer_text"]),
         ("Contact details", ["legal_business_name", "contact_email", "contact_phone", "whatsapp_number", "address"]),
         ("Social links", ["facebook_url", "instagram_url", "linkedin_url", "youtube_url"]),
+        ("SEO & analytics", ["seo_home_title", "seo_home_description", "city", "google_site_verification", "google_analytics_id"]),
         ("Payments", ["razorpay_enabled", "upi_enabled", "upi_id", "upi_payee_name", "upi_qr_code", "upi_instructions"]),
         ("Invoices & GST", ["invoice_mode", "gstin", "business_state", "gst_rate", "sac_code", "invoice_prefix"]),
         ("Notifications & sign-up", ["email_notifications_enabled", "require_email_verification"]),
@@ -492,3 +513,16 @@ class SiteSettingsForm(StyledModelForm):
 
 
 __all__ = [n for n in dir() if n.endswith("Form")] + ["ResourceType"]
+
+
+class EnquiryUpdateForm(StyledModelForm):
+    class Meta:
+        from apps.core.models import Enquiry
+
+        model = Enquiry
+        fields = ["status", "assigned_to", "follow_up_on", "course", "notes"]
+        widgets = {"follow_up_on": D, "notes": forms.Textarea(attrs={"rows": 5, "placeholder": "Call summary, objections, next steps"})}
+
+    def limit_querysets(self):
+        self.fields["assigned_to"].queryset = User.objects.filter(is_active=True).exclude(role=Role.STUDENT)
+        self.fields["course"].required = False

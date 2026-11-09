@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% load lms %}
 {% load static %}
-{% block title %}{{ academy.tagline }}{% endblock %}
+{% block full_title %}{% if academy.seo_home_title %}{{ academy.seo_home_title }}{% else %}{{ academy.site_name }}{% if academy.city %} – IT Training Institute in {{ academy.city }}{% endif %} | {{ academy.tagline }}{% endif %}{% endblock %}
+{% block meta_description %}{{ academy.seo_home_description|default:academy.hero_subtitle|truncatechars:160 }}{% endblock %}
 {% block messages %}{% endblock %}
+{% block structured_data %}{% jsonld structured_data %}{% endblock %}
 {% block content %}
 <section class="hero">
   <div class="container">
@@ -17,6 +20,7 @@
         </form>
         <div class="d-flex flex-wrap gap-3 mt-4">
           <a href="{% url 'core:course_list' %}" class="btn btn-outline-light">Browse all courses</a>
+          <a href="#enquiry" class="btn btn-cyan"><i class="bi bi-calendar-check me-1"></i>Book a free demo</a>
           {% if not user.is_authenticated %}<a href="{% url 'accounts:signup' %}" class="btn btn-link text-white">Create a free account →</a>{% endif %}
         </div>
       </div>
@@ -50,6 +54,19 @@
   {% else %}
   <div class="card"><div class="empty-state"><i class="bi bi-hourglass-split"></i><h5 class="mt-3">New courses are on the way</h5><p>Our trainers are preparing the next batch. Check back soon.</p></div></div>
   {% endif %}
+</section>
+
+<section class="container pb-5" id="enquiry">
+  <div class="card border-0 shadow-sm overflow-hidden">
+    <div class="row g-0">
+      <div class="col-lg-5 bg-navy text-white p-4 p-lg-5 d-flex flex-column justify-content-center">
+        <span class="hero-badge align-self-start mb-3"><i class="bi bi-gift me-1"></i>Free demo class</span>
+        <h2 class="h3 fw-bold">Not sure which course is right for you?</h2>
+        <p class="text-white-50 mb-0">Share your background and goals. A trainer will call you, recommend a learning path and invite you to a free live demo.</p>
+      </div>
+      <div class="col-lg-7 p-4 p-lg-5">{% include "partials/enquiry_form.html" with form=enquiry_form button="Book my free demo" %}</div>
+    </div>
+  </div>
 </section>
 
 <section class="bg-white border-top border-bottom py-5">

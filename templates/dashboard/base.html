@@ -21,6 +21,7 @@
     <a class="nav-link {% if s == 'notifications' %}active{% endif %}" href="{% url 'dashboard:announcements' %}"><i class="bi bi-megaphone"></i>Notifications</a>
     {% if user.can_manage_all_content %}
     <div class="nav-section">Students</div>
+    <a class="nav-link {% if s == 'enquiries' %}active{% endif %}" href="{% url 'dashboard:enquiries' %}"><i class="bi bi-funnel"></i>Enquiries (leads){% if new_leads %} <span class="badge rounded-pill text-bg-info ms-auto">{{ new_leads }}</span>{% endif %}</a>
     <a class="nav-link {% if s == 'students' %}active{% endif %}" href="{% url 'dashboard:students' %}"><i class="bi bi-person-lines-fill"></i>Student management</a>
     <a class="nav-link {% if s == 'certificates' %}active{% endif %}" href="{% url 'dashboard:certificates' %}"><i class="bi bi-award"></i>Certificates</a>
     {% endif %}

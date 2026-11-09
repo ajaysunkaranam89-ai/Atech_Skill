@@ -16,7 +16,8 @@ PRIVACY = """Last updated: {updated}
 * Learning data: courses enrolled, lessons viewed and completed, assignment submissions, certificates.
 * Payment details: transaction reference, amount and status. Card, UPI and bank details are processed by Razorpay or your UPI app and are never stored by us.
 * UPI payment screenshots and UTR numbers you submit for manual verification.
-* Technical data: IP address, browser type and login times, used for security.
+* Enquiry details you submit (name, phone, email, course interest, message) so we can respond to you.
+* Technical data: IP address, browser type, login times and the website or campaign that referred you, used for security and to improve our outreach.
 
 ## How we use your information
 
@@ -31,7 +32,7 @@ We do not sell your personal information. We share it only with service provider
 
 ## Cookies
 
-We use essential cookies to keep you logged in and protect forms. We do not use advertising cookies.
+We use essential cookies to keep you logged in and protect forms. We may use Google Analytics cookies to understand how visitors use the site (IP addresses are anonymised). We do not sell your data or use it for third-party advertising.
 
 ## Data retention
 

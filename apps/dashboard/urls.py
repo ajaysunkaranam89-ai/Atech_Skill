@@ -87,6 +87,10 @@ urlpatterns = [
     path("notifications/<int:pk>/edit/", vo.AnnouncementUpdate.as_view(), name="announcement_edit"),
     path("notifications/<int:pk>/delete/", vo.AnnouncementDelete.as_view(), name="announcement_delete"),
     path("notifications/log/", vo.NotificationLog.as_view(), name="notification_log"),
+    # Leads
+    path("enquiries/", vo.EnquiryList.as_view(), name="enquiries"),
+    path("enquiries/export/", vo.enquiry_export, name="enquiry_export"),
+    path("enquiries/<int:pk>/", vo.enquiry_detail, name="enquiry_detail"),
     # Reports, settings, audit
     path("reports/", vo.reports, name="reports"),
     path("settings/", vo.site_settings, name="settings"),

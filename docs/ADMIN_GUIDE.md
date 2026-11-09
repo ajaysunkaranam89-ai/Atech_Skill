@@ -44,3 +44,11 @@ Every content form has a **Notify students** box. The same change is never notif
 - **Website settings**: name, tagline, hero text, logo, contact details, UPI ID/QR, payment toggles, email toggle.
 - **Administrators**: create Course Administrators and Trainers (Super Admin only). Assign trainers to courses on the course form.
 - **Audit log**: every create, update, delete, publish, login, payment approval and export.
+
+## SEO & getting leads
+1. **Website settings → SEO & analytics:** set the *Home page SEO title* and description, your *City*, the *Google Search Console* verification code and your *Google Analytics 4* ID (G-…).
+2. **Google Search Console:** add your domain, verify with the code above, then submit `https://YOUR_DOMAIN/sitemap.xml`. Published courses, trainer pages and policy pages are listed automatically.
+3. **Each course → Edit → SEO (Google search):** write an SEO title (≤60 chars, e.g. "CCNA Training in Bangalore | Live Online Classes") and description (≤155 chars). If left blank, the course title and short description are used.
+4. **Course pages** carry Google "Course" rich-result data (price in INR, trainer, what you'll learn). Check with Google's Rich Results Test.
+5. **Leads:** the home, course and contact pages have a *Book a free demo / call back* form, and a WhatsApp button appears once *WhatsApp number* is set. New leads are shown in **Enquiries (leads)** with a badge, and Super/Course Admins get a dashboard and email alert.
+6. **Track campaigns:** add UTM tags to links you share, e.g. `https://YOUR_DOMAIN/courses/ccna/?utm_source=instagram&utm_medium=story&utm_campaign=ccna-dec`. Each lead shows where it came from; filter by source or export to CSV.

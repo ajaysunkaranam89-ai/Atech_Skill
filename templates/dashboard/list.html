@@ -5,6 +5,7 @@
   {% for label, url, icon in extra_buttons %}<a href="{{ url }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-{{ icon }} me-1"></i>{{ label }}</a>{% endfor %}
   {% if create_url %}<a href="{{ create_url }}" class="btn btn-cyan btn-sm"><i class="bi bi-plus-lg me-1"></i>{{ create_label }}</a>{% endif %}
 </div>
+{% if summary_html %}<div class="alert alert-light border py-2 small">{{ summary_html }}</div>{% endif %}
 {% if summary %}<div class="alert alert-info py-2 small">Paid in current filter: <strong>{{ summary.n }}</strong> payments totalling <strong>₹{{ summary.total|default:0 }}</strong></div>{% endif %}
 
 <form class="card card-body py-2 mb-3" method="get">

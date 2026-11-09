@@ -1,0 +1,23 @@
+{# Lead form. Expects `form` (EnquiryForm); optional `course` to pre-select; optional `compact`. #}
+<form method="post" action="{% url 'core:enquiry' %}" class="enquiry-form" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <div class="hp-field" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Leave this empty</label>{{ form.website }}</div>
+  {% if form.non_field_errors %}<div class="alert alert-danger py-2 small">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+  <div class="row g-2">
+    <div class="{% if compact %}col-12{% else %}col-md-6{% endif %}">{% include "partials/field.html" with field=form.name %}</div>
+    <div class="{% if compact %}col-12{% else %}col-md-6{% endif %}">{% include "partials/field.html" with field=form.phone %}</div>
+    {% if not compact %}<div class="col-md-6">{% include "partials/field.html" with field=form.email %}</div>{% endif %}
+    <div class="{% if compact %}col-12{% else %}col-md-6{% endif %}">
+      {% if course %}<input type="hidden" name="course" value="{{ course.pk }}">{% include "partials/field.html" with field=form.kind %}
+      {% else %}{% include "partials/field.html" with field=form.course %}{% endif %}
+    </div>
+    {% if not compact %}
+    {% if not course %}<div class="col-md-6">{% include "partials/field.html" with field=form.kind %}</div>{% endif %}
+    <div class="col-md-6">{% include "partials/field.html" with field=form.preferred_time %}</div>
+    <div class="col-12">{% include "partials/field.html" with field=form.message %}</div>
+    {% endif %}
+  </div>
+  <button class="btn btn-cyan w-100" type="submit"><i class="bi bi-telephone-forward me-1"></i>{{ button|default:"Get a free call back" }}</button>
+  <p class="small text-muted mt-2 mb-0"><i class="bi bi-shield-check me-1"></i>No spam. We'll only contact you about your enquiry. <a href="{% url 'core:privacy' %}">Privacy</a></p>
+</form>

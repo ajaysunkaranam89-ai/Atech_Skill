@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Lead: {{ enq.name }}{% endblock %}
+{% block page_title %}Enquiries (leads){% endblock %}
+{% block content %}
+<a href="{% url 'dashboard:enquiries' %}" class="small">← All enquiries</a>
+<div class="row g-4 mt-1">
+  <div class="col-lg-6">
+    <div class="card card-body">
+      <div class="d-flex align-items-start gap-2 mb-2">
+        <h1 class="h4 text-navy mb-0 me-auto">{{ enq.name }}</h1>{% status_badge enq.status enq.get_status_display %}
+      </div>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-sm btn-primary" href="tel:{{ enq.phone|cut:' ' }}"><i class="bi bi-telephone me-1"></i>Call {{ enq.phone }}</a>
+        <a class="btn btn-sm btn-success" target="_blank" rel="noopener" href="https://wa.me/{{ enq.whatsapp_phone }}?text={% filter urlencode %}Hi {{ enq.name }}, this is {{ academy.site_name }} regarding your enquiry{% if enq.course %} about {{ enq.course.title }}{% endif %}.{% endfilter %}"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>
+        {% if enq.email %}<a class="btn btn-sm btn-outline-secondary" href="mailto:{{ enq.email }}"><i class="bi bi-envelope me-1"></i>Email</a>{% endif %}
+      </div>
+      <dl class="row small mb-0">
+        <dt class="col-4">Received</dt><dd class="col-8">{{ enq.created_at|date:"d M Y, h:i A" }}</dd>
+        <dt class="col-4">Interested in</dt><dd class="col-8">{{ enq.get_kind_display }}{% if enq.course %} – <a href="{{ enq.course.get_absolute_url }}" target="_blank">{{ enq.course.title }}</a>{% endif %}</dd>
+        <dt class="col-4">Best time</dt><dd class="col-8">{{ enq.preferred_time|default:"—" }}</dd>
+        <dt class="col-4">Email</dt><dd class="col-8">{{ enq.email|default:"—" }}</dd>
+        <dt class="col-4">Message</dt><dd class="col-8" style="white-space:pre-line">{{ enq.message|default:"—" }}</dd>
+        <dt class="col-4">Source</dt><dd class="col-8">{{ enq.source_label }}{% if enq.utm_campaign %} <span class="badge text-bg-light border">campaign: {{ enq.utm_campaign }}</span>{% endif %}</dd>
+        <dt class="col-4">Submitted on</dt><dd class="col-8 text-break">{{ enq.source_page|default:"—" }}</dd>
+        {% if enq.user %}<dt class="col-4">Account</dt><dd class="col-8">Registered user ({{ enq.user.email }})</dd>{% endif %}
+      </dl>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <form method="post" class="card card-body">{% csrf_token %}
+      <h2 class="h6 fw-bold text-navy">Follow-up</h2>
+      {% include "partials/form_errors.html" %}
+      <div class="row">
+        <div class="col-md-6">{% include "partials/field.html" with field=form.status %}</div>
+        <div class="col-md-6">{% include "partials/field.html" with field=form.follow_up_on %}</div>
+        <div class="col-md-6">{% include "partials/field.html" with field=form.assigned_to %}</div>
+        <div class="col-md-6">{% include "partials/field.html" with field=form.course %}</div>
+        <div class="col-12">{% include "partials/field.html" with field=form.notes %}</div>
+      </div>
+      <button class="btn btn-primary">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

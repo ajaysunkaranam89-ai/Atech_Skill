@@ -1,9 +1,15 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
+from django.views.decorators.cache import cache_page
+
+from apps.core.seo import SITEMAPS, robots_txt
 
 urlpatterns = [
+    path("sitemap.xml", cache_page(60 * 60)(sitemap), {"sitemaps": SITEMAPS}, name="sitemap"),
+    path("robots.txt", robots_txt, name="robots"),
     path("", include("apps.core.urls")),
     path("accounts/", include("apps.accounts.urls")),
     path("learn/", include("apps.portal.urls")),

@@ -9,6 +9,10 @@
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-camera-reels"></i></div><div><div class="kpi-value">{{ stats.lessons }}</div><div class="small text-muted">Lessons</div></div></div></div>
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-people"></i></div><div><div class="kpi-value">{{ stats.students }}</div><div class="small text-muted">Active students</div></div></div></div>
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-inbox"></i></div><div><div class="kpi-value">{{ pending_submissions }}</div><div class="small text-muted">Submissions to grade</div></div></div></div>
+  {% if leads %}
+  <div class="col-6 col-xl-3"><a href="{% url 'dashboard:enquiries' %}?status=new" class="kpi d-flex gap-3 text-reset {% if leads.new %}border-info{% endif %}"><div class="kpi-icon"><i class="bi bi-funnel"></i></div><div><div class="kpi-value">{{ leads.new }}</div><div class="small text-muted">New leads ({{ leads.week }} this week)</div></div></a></div>
+  <div class="col-6 col-xl-3"><a href="{% url 'dashboard:enquiries' %}?sort=follow" class="kpi d-flex gap-3 text-reset {% if leads.due %}border-warning{% endif %}"><div class="kpi-icon"><i class="bi bi-alarm"></i></div><div><div class="kpi-value">{{ leads.due }}</div><div class="small text-muted">Follow-ups due</div></div></a></div>
+  {% endif %}
   {% if finance %}
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div><div><div class="kpi-value">₹{{ finance.revenue_month|floatformat:0 }}</div><div class="small text-muted">Revenue this month</div></div></div></div>
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-cash-stack"></i></div><div><div class="kpi-value">₹{{ finance.revenue_total|floatformat:0 }}</div><div class="small text-muted">Total revenue</div></div></div></div>

@@ -76,6 +76,15 @@ def overview(request):
         "recent_lessons": Lesson.objects.filter(module__course__in=courses).select_related("module__course").order_by("-content_updated_at")[:8],
         "pending_submissions": AssignmentSubmission.objects.filter(assignment__course__in=courses, status=SubmissionStatus.SUBMITTED).count(),
     }
+    if u.can_manage_all_content:
+        from apps.core.models import Enquiry, EnquiryStatus
+
+        ctx["leads"] = {
+            "new": Enquiry.objects.filter(status=EnquiryStatus.NEW).count(),
+            "week": Enquiry.objects.filter(created_at__gte=now - timedelta(days=7)).count(),
+            "due": Enquiry.objects.filter(follow_up_on__lte=timezone.localdate()).exclude(
+                status__in=[EnquiryStatus.CONVERTED, EnquiryStatus.CLOSED]).count(),
+        }
     if u.is_super_admin:
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         paid = Payment.objects.filter(status=PaymentStatus.PAID)
@@ -633,3 +642,94 @@ class AuditLogList(ManageListView):
 
     def actions(self, o):
         return []
+
+
+# --------------------------------------------------------------------- enquiries (leads)
+from apps.core.models import Enquiry, EnquiryStatus  # noqa: E402
+
+from .forms import EnquiryUpdateForm  # noqa: E402
+
+
+class EnquiryList(ManageListView):
+    capability = "content"
+    section = "enquiries"
+    model = Enquiry
+    title = "Enquiries (leads)"
+    search_fields = ["name", "phone", "email", "message", "notes", "utm_campaign"]
+    filters = [
+        ("status", "Status", EnquiryStatus.choices),
+        ("course_id", "Course", lambda v: [(c.pk, c.title) for c in Course.objects.all()]),
+        ("kind", "Interest", Enquiry.KIND_CHOICES),
+        ("utm_source", "Campaign source",
+         lambda v: [(s, s) for s in Enquiry.objects.exclude(utm_source="").values_list("utm_source", flat=True).distinct()]),
+    ]
+    sort_options = {"-created": ("Newest", "-created_at"), "follow": ("Follow-up date", "follow_up_on"), "status": ("Status", "status")}
+    default_sort = "-created"
+    paginate_by = 30
+
+    def base_queryset(self):
+        return Enquiry.objects.select_related("course", "assigned_to")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["extra_buttons"] = [("Export CSV", reverse("dashboard:enquiry_export") + "?" + self.request.GET.urlencode(), "download")]
+        new = Enquiry.objects.filter(status=EnquiryStatus.NEW).count()
+        week = Enquiry.objects.filter(created_at__gte=timezone.now() - timedelta(days=7)).count()
+        conv = Enquiry.objects.filter(status=EnquiryStatus.CONVERTED).count()
+        total = Enquiry.objects.count()
+        ctx["summary_html"] = format_html(
+            "<strong>{}</strong> new · <strong>{}</strong> in the last 7 days · <strong>{}</strong> converted of {} ({}%)",
+            new, week, conv, total, round(conv * 100 / total) if total else 0,
+        )
+        return ctx
+
+    def columns(self):
+        return ["Received", "Lead", "Course / interest", "Source", "Status", "Follow-up", "Owner"]
+
+    def row(self, o):
+        lead = format_html('<a class="fw-semibold" href="{}">{}</a><div class="small">{}{}</div>',
+                           reverse("dashboard:enquiry_detail", args=[o.pk]), o.name, o.phone,
+                           format_html(" · {}", o.email) if o.email else "")
+        interest = format_html("{}<div class='small text-muted'>{}</div>",
+                               o.course.title if o.course else "Not sure yet", o.get_kind_display())
+        return [timezone.localtime(o.created_at).strftime("%d %b %Y %H:%M"), lead, interest, o.source_label,
+                badge(o.status, o.get_status_display()),
+                o.follow_up_on.strftime("%d %b") if o.follow_up_on else "—", o.assigned_to or "—"]
+
+    def actions(self, o):
+        return [
+            {"label": "Open", "url": reverse("dashboard:enquiry_detail", args=[o.pk]), "icon": "pencil-square"},
+            {"label": "WhatsApp", "url": f"https://wa.me/{o.whatsapp_phone}", "icon": "whatsapp"},
+        ]
+
+
+@staff_required("content")
+def enquiry_detail(request, pk):
+    enq = get_object_or_404(Enquiry.objects.select_related("course", "assigned_to", "user"), pk=pk)
+    form = EnquiryUpdateForm(request.POST or None, instance=enq, actor=request.user)
+    if request.method == "POST" and form.is_valid():
+        changes = audit.diff_form(form)
+        form.save()
+        if changes:
+            audit.log(request, "enquiry_update", enq, changes)
+        messages.success(request, f"Lead “{enq.name}” updated.")
+        return redirect("dashboard:enquiries")
+    return render(request, "dashboard/enquiry_detail.html", {"enq": enq, "form": form, "section": "enquiries"})
+
+
+@staff_required("content")
+def enquiry_export(request):
+    view = EnquiryList()
+    view.setup(request)
+    resp = HttpResponse(content_type="text/csv")
+    resp["Content-Disposition"] = 'attachment; filename="enquiries.csv"'
+    w = csv.writer(resp)
+    w.writerow(["received", "name", "phone", "email", "course", "interest", "preferred_time", "message", "status",
+                "follow_up_on", "owner", "notes", "utm_source", "utm_medium", "utm_campaign", "referrer", "source_page"])
+    for e in view.get_queryset():
+        w.writerow([timezone.localtime(e.created_at).isoformat(), e.name, e.phone, e.email, e.course.title if e.course else "",
+                    e.get_kind_display(), e.preferred_time, e.message, e.get_status_display(), e.follow_up_on or "",
+                    e.assigned_to.email if e.assigned_to else "", e.notes, e.utm_source, e.utm_medium, e.utm_campaign,
+                    e.referrer, e.source_page])
+    audit.log(request, "export", object_type="enquiries")
+    return resp

@@ -10,6 +10,8 @@
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav me-auto ms-lg-4">
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}" href="{% url 'core:course_list' %}">Courses</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name in 'trainers trainer_detail' %}active{% endif %}" href="{% url 'core:trainers' %}">Trainers</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'core:about' %}">About</a></li>
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'core:contact' %}">Contact</a></li>
         {% if user.is_authenticated %}
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'portal' %}active{% endif %}" href="{% url 'portal:dashboard' %}">My Learning</a></li>
@@ -49,6 +51,12 @@
 {% endif %}
 {% block messages %}{% include "partials/messages.html" %}{% endblock %}
 <main>{% block content %}{% endblock %}</main>
+{% if academy.whatsapp_number and not noindex %}
+<a class="whatsapp-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"
+   href="https://wa.me/{{ academy.whatsapp_number|cut:'+'|cut:' '|cut:'-' }}?text={% filter urlencode %}Hi {{ academy.site_name }}, I'm interested in {% if course %}the {{ course.title }} course{% else %}your IT courses{% endif %}. Please share details.{% endfilter %}">
+  <i class="bi bi-whatsapp"></i><span class="d-none d-md-inline ms-2">Chat with us</span>
+</a>
+{% endif %}
 <footer class="site-footer mt-5 py-5">
   <div class="container">
     <div class="row g-4">
@@ -61,6 +69,8 @@
         <h6 class="text-white">Explore</h6>
         <ul class="list-unstyled small">
           <li><a href="{% url 'core:course_list' %}">All courses</a></li>
+          <li><a href="{% url 'core:about' %}">About us</a></li>
+          <li><a href="{% url 'core:trainers' %}">Our trainers</a></li>
           <li><a href="{% url 'accounts:signup' %}">Create account</a></li>
           <li><a href="{% url 'accounts:login' %}">Student login</a></li>
           <li><a href="{% url 'core:contact' %}">Contact us</a></li>

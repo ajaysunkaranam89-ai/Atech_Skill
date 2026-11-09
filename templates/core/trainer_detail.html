@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% load lms %}
 {% block title %}Meet Your Trainer – {{ trainer.user.get_full_name }}{% endblock %}
+{% block og_type %}profile{% endblock %}
+{% block og_title %}Meet Your Trainer – {{ trainer.user.get_full_name }}{% endblock %}
+{% block og_image %}{% if trainer.photo %}{{ SITE_URL }}{{ trainer.photo.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
 {% block meta_description %}{{ trainer.bio|first_paragraph|truncatewords:30 }}{% endblock %}
+{% block structured_data %}{% jsonld structured_data %}{% endblock %}
 {% block content %}
 <div class="page-header">
   <div class="container">
