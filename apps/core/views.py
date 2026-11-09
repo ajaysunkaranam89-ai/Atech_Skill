@@ -74,6 +74,16 @@ def course_detail(request, slug):
     return render(request, "core/course_detail.html", ctx)
 
 
+def trainer_detail(request, pk):
+    from apps.accounts.models import TrainerProfile
+
+    trainer = get_object_or_404(TrainerProfile.objects.select_related("user"), pk=pk, is_public=True, user__is_active=True)
+    return render(request, "core/trainer_detail.html", {
+        "trainer": trainer,
+        "courses": trainer.courses.filter(status=CourseStatus.PUBLISHED).select_related("category"),
+    })
+
+
 def certificate_verify(request, number):
     cert = Certificate.objects.filter(certificate_number=number.upper()).select_related("student").first()
     return render(request, "core/certificate_verify.html", {"cert": cert, "number": number})

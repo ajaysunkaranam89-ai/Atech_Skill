@@ -134,3 +134,36 @@ class BrandingTests(LMSTestCase):
         # Django's auth views inject their own `site` context; branding must still render.
         for url in (reverse("accounts:login"), reverse("accounts:signup"), reverse("accounts:password_reset"), "/"):
             self.assertContains(self.client.get(url), "A TechSkills Academy")
+
+
+class TrainerProfileTests(LMSTestCase):
+    def test_rich_text_bio_is_safe_and_formatted(self):
+        from apps.core.templatetags.lms import first_paragraph, rich_text
+
+        html = rich_text("## About\n\nIntro <script>x</script> **bold**\n\n* one\n* two\n\n1. **A:** first\n2. second")
+        self.assertIn('<h3 class="h5 section-title mt-4">About</h3>', html)
+        self.assertIn("&lt;script&gt;", html)
+        self.assertNotIn("<script>", html)
+        self.assertIn("<strong>bold</strong>", html)
+        self.assertEqual(html.count("<li"), 4)
+        self.assertIn("<ol>", html)
+        self.assertEqual(first_paragraph("## About\n\nFirst para.\n\n* item"), "First para.")
+
+    def test_public_trainer_page_and_course_link(self):
+        tp = self.trainer_profile
+        tp.bio = "## About the Trainer\n\nTara teaches DevOps.\n\n* Docker\n* Kubernetes"
+        tp.experience_years = 12
+        tp.expertise = "Docker, Kubernetes"
+        tp.save()
+        course = self.make_course()
+        r = self.client.get(reverse("core:trainer_detail", args=[tp.pk]))
+        self.assertContains(r, "Meet Your Trainer")
+        self.assertContains(r, "12+ years")
+        self.assertContains(r, "<li class=\"col-md-6\">Kubernetes</li>", html=False)
+        self.assertContains(r, course.title)
+        page = self.client.get(course.get_absolute_url())
+        self.assertContains(page, "Tara teaches DevOps.")
+        self.assertContains(page, reverse("core:trainer_detail", args=[tp.pk]))
+        tp.is_public = False
+        tp.save()
+        self.assertEqual(self.client.get(reverse("core:trainer_detail", args=[tp.pk])).status_code, 404)

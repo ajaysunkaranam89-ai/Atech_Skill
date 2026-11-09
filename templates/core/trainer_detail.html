@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}Meet Your Trainer – {{ trainer.user.get_full_name }}{% endblock %}
+{% block meta_description %}{{ trainer.bio|first_paragraph|truncatewords:30 }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="d-flex flex-column flex-md-row align-items-md-center gap-4">
+      {% if trainer.photo %}<img src="{{ trainer.photo.url }}" alt="{{ trainer.user.get_full_name }}" width="150" height="150" class="rounded-circle object-fit-cover border border-3 border-info flex-shrink-0">
+      {% else %}<div class="brand-mark flex-shrink-0" style="width:150px;height:150px;font-size:3rem">{{ trainer.user|initials }}</div>{% endif %}
+      <div>
+        <div class="small text-uppercase text-cyan fw-semibold mb-1" style="letter-spacing:.08em">Meet Your Trainer</div>
+        <h1 class="fw-bold mb-1">{{ trainer.user.get_full_name }}</h1>
+        {% if trainer.designation %}<p class="lead text-white-50 mb-2">{{ trainer.designation }}</p>{% endif %}
+        <div class="d-flex flex-wrap gap-2">
+          {% if trainer.experience_years %}<span class="hero-badge"><i class="bi bi-briefcase me-1"></i>{{ trainer.experience_years }}+ years of IT industry experience</span>{% endif %}
+          {% if trainer.linkedin_url %}<a class="hero-badge" href="{{ trainer.linkedin_url }}" target="_blank" rel="noopener"><i class="bi bi-linkedin me-1"></i>LinkedIn</a>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card card-body p-4 trainer-bio">
+        {% if trainer.bio %}{{ trainer.bio|rich_text }}{% else %}<p class="text-muted mb-0">Profile coming soon.</p>{% endif %}
+      </div>
+    </div>
+    <div class="col-lg-4">
+      {% if trainer.expertise %}
+      <div class="card card-body mb-4">
+        <h2 class="h6 fw-bold text-navy">Expertise</h2>
+        <div class="d-flex flex-wrap gap-2">{% for e in trainer.expertise_list %}<span class="chip">{{ e }}</span>{% endfor %}</div>
+      </div>
+      {% endif %}
+      <div class="card sticky-lg-top" style="top:90px">
+        <div class="card-header fw-semibold">Courses by {{ trainer.user.first_name|default:trainer.user.get_full_name }}</div>
+        <ul class="list-group list-group-flush">
+          {% for c in courses %}
+          <li class="list-group-item d-flex align-items-center gap-2">
+            <a href="{{ c.get_absolute_url }}" class="me-auto fw-medium">{{ c.title }}</a><span class="price small">{{ c.effective_price|inr }}</span>
+          </li>
+          {% empty %}<li class="list-group-item small text-muted">Courses coming soon.</li>{% endfor %}
+        </ul>
+        <div class="card-body"><a href="{% url 'core:course_list' %}" class="btn btn-cyan w-100">Browse all courses</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

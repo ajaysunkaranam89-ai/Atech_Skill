@@ -106,7 +106,11 @@ class StudentProfile(models.Model):
 class TrainerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="trainer_profile")
     designation = models.CharField(max_length=150, blank=True)
-    bio = models.TextField(blank=True)
+    bio = models.TextField(
+        blank=True,
+        help_text="Formatting: '## Heading', '### Sub-heading', '* bullet', '1. numbered', **bold**. "
+        "Leave a blank line between paragraphs. The first paragraph is shown on course pages.",
+    )
     expertise = models.CharField(max_length=255, blank=True, help_text="Comma separated skills")
     experience_years = models.PositiveSmallIntegerField(default=0)
     photo = models.ImageField(upload_to="trainers/", blank=True, validators=[validate_image_upload])
@@ -119,3 +123,7 @@ class TrainerProfile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+    @property
+    def expertise_list(self):
+        return [x.strip() for x in (self.expertise or "").split(",") if x.strip()]

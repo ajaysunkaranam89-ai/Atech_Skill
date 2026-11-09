@@ -125,3 +125,9 @@ footer.site-footer a:hover { color: var(--ts-cyan-2); }
 .certificate { max-width: 1000px; margin: 2rem auto; background: #fff; border: 14px solid var(--ts-navy); outline: 3px solid var(--ts-cyan); outline-offset: -26px; padding: 4rem 3rem; text-align: center; }
 .certificate .cert-name { font-family: "Poppins", serif; font-size: 2.6rem; color: var(--ts-navy); border-bottom: 2px solid var(--ts-cyan); display: inline-block; padding: 0 2rem .3rem; }
 @media print { .no-print { display: none !important; } body { background: #fff; } .certificate { margin: 0; } }
+
+/* ---------- trainer profile ---------- */
+.trainer-bio h3:first-child { margin-top: 0 !important; }
+.trainer-bio p { line-height: 1.7; }
+.trainer-bio ol li { margin-bottom: .35rem; }
+a.hero-badge:hover { color: #fff; }
