@@ -95,7 +95,17 @@ class ProfileForm(BootstrapMixin, forms.ModelForm):
 class StudentProfileForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = StudentProfile
-        fields = ["city", "qualification", "current_role", "linkedin_url", "photo"]
+        fields = ["city", "state", "qualification", "current_role", "linkedin_url", "photo",
+                  "billing_name", "billing_gstin", "billing_address"]
+        widgets = {"billing_address": forms.Textarea(attrs={"rows": 2})}
+
+    def clean_billing_gstin(self):
+        import re
+
+        v = (self.cleaned_data.get("billing_gstin") or "").strip().upper()
+        if v and not re.fullmatch(r"\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]", v):
+            raise forms.ValidationError("Enter a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5).")
+        return v
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

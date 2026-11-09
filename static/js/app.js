@@ -157,6 +157,15 @@
           document.querySelectorAll("[data-course-progress-label]").forEach(function (el) {
             el.textContent = data.progress.percent + "% · " + data.progress.completed + "/" + data.progress.total + " lessons";
           });
+          if (data.certificate_url) {
+            const box = document.createElement("div");
+            box.className = "alert alert-success d-flex align-items-center gap-2 mt-3";
+            box.innerHTML = '<i class="bi bi-award fs-4"></i><div class="me-auto"><strong>Congratulations!</strong> You completed the course and earned a certificate.</div>';
+            const a = document.createElement("a");
+            a.className = "btn btn-sm btn-success"; a.href = data.certificate_url; a.textContent = "View certificate";
+            box.appendChild(a);
+            form.closest(".d-flex").after(box);
+          }
           const icon = document.querySelector("[data-lesson-icon='" + form.dataset.lesson + "']");
           if (icon) icon.className = data.completed ? "bi bi-check-circle-fill text-success" : "bi bi-play-circle text-muted";
         })

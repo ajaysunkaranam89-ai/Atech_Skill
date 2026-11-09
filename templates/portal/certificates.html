@@ -9,7 +9,7 @@
       <i class="bi bi-award text-cyan fs-1"></i>
       <h2 class="h6 mt-2">{{ c.course_title }}</h2>
       <p class="small text-muted mb-3">{{ c.certificate_number }} · {{ c.issued_at|date:"d M Y" }}{% if c.is_revoked %} · <span class="text-danger">revoked</span>{% endif %}</p>
-      {% if not c.is_revoked %}<a class="btn btn-sm btn-cyan mt-auto" href="{% url 'portal:certificate' c.certificate_number %}">View / print</a>{% endif %}
+      {% if not c.is_revoked %}<div class="d-flex gap-2 mt-auto"><a class="btn btn-sm btn-cyan" href="{% url 'portal:certificate_pdf' c.certificate_number %}"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a><a class="btn btn-sm btn-outline-secondary" href="{% url 'portal:certificate' c.certificate_number %}">View</a></div>{% endif %}
     </div></div>
     {% empty %}
     <div class="col-12"><div class="card"><div class="empty-state"><i class="bi bi-award"></i><p class="mt-2 mb-0">Certificates appear here once the academy issues them after you complete a course.</p></div></div></div>

@@ -42,7 +42,13 @@ def lesson_progress_api(request, pk):
     p.completed = completed
     p.completed_at = timezone.now() if completed else None
     p.save()
-    return Response({"lesson": lesson.pk, "completed": completed, "progress": course_progress(request.user, course)})
+    from apps.courses.certificates import maybe_issue_certificate
+
+    cert = maybe_issue_certificate(request.user, course) if completed else None
+    return Response({
+        "lesson": lesson.pk, "completed": completed, "progress": course_progress(request.user, course),
+        "certificate": cert.certificate_number if cert else None,
+    })
 
 
 @api_view(["GET"])

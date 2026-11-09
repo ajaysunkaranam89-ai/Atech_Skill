@@ -168,6 +168,8 @@ def mark_payment_paid(payment, razorpay_payment_id="", signature="", raw=None, a
         enr = activate_enrollment(payment.student, payment.course, EnrollmentSource.RAZORPAY, batch=payment.batch)
         if payment.enrollment_id != enr.pk:
             Payment.objects.filter(pk=payment.pk).update(enrollment=enr)
+    if payment.status == PaymentStatus.PAID:
+        _issue_invoice_safely(payment)
     return payment
 
 
@@ -193,6 +195,25 @@ def handle_webhook(body: bytes, signature):
     return payment
 
 
+def _issue_invoice_safely(payment):
+    """Create the invoice and tell the student. Never breaks the payment flow."""
+    from .invoicing import issue_invoice
+
+    try:
+        payment.refresh_from_db()
+        inv = issue_invoice(payment)
+    except Exception:
+        logger.exception("Could not issue invoice for payment %s", payment.pk)
+        return None
+    if inv is not None:
+        notify_users(
+            [payment.student], NotificationKind.PAYMENT, f"Payment received: ₹{inv.total}",
+            f"Thank you! {inv.title} {inv.number} for {payment.course_title} is ready to download.",
+            link="/learn/payments/", dedupe_key=f"invoice:{inv.pk}",
+        )
+    return inv
+
+
 # ------------------------------------------------------------------ UPI (manual verification)
 def approve_upi(submission: UpiPaymentSubmission, reviewer, note=""):
     with transaction.atomic():
@@ -212,6 +233,7 @@ def approve_upi(submission: UpiPaymentSubmission, reviewer, note=""):
     if sub.course_id:
         enr = activate_enrollment(sub.student, sub.course, EnrollmentSource.UPI, batch=sub.batch)
         Payment.objects.filter(pk=payment.pk).update(enrollment=enr)
+    _issue_invoice_safely(payment)
     return sub
 
 

@@ -1,0 +1,270 @@
+"""PDF rendering (ReportLab) for certificates and invoices/receipts.
+
+Uses the built-in Helvetica fonts so no system font packages are needed; the
+rupee symbol is written as "Rs." because Helvetica has no ₹ glyph.
+"""
+from io import BytesIO
+
+from django.conf import settings
+from django.utils import timezone
+from reportlab.graphics import renderPDF
+from reportlab.graphics.barcode.qr import QrCodeWidget
+from reportlab.graphics.shapes import Drawing
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+from .india import STATE_NAMES
+
+NAVY = colors.HexColor("#000f2f")
+CYAN = colors.HexColor("#00b4d8")
+BLUE = colors.HexColor("#1565c0")
+MUTED = colors.HexColor("#6b7a90")
+LOGO = settings.BASE_DIR / "static" / "img" / "logo-pdf.png"
+
+
+def _logo_reader():
+    try:
+        return ImageReader(str(LOGO))
+    except Exception:
+        return None
+
+
+def _qr(url, size):
+    widget = QrCodeWidget(url)
+    x1, y1, x2, y2 = widget.getBounds()
+    d = Drawing(size, size, transform=[size / (x2 - x1), 0, 0, size / (y2 - y1), 0, 0])
+    d.add(widget)
+    return d
+
+
+def money(v):
+    return f"Rs. {v:,.2f}"
+
+
+# ------------------------------------------------------------------ certificate
+def certificate_pdf(cert, verify_url, site_name, tagline):
+    buf = BytesIO()
+    from reportlab.pdfgen import canvas
+
+    w, h = landscape(A4)
+    c = canvas.Canvas(buf, pagesize=(w, h))
+    c.setTitle(f"Certificate {cert.certificate_number}")
+    c.setAuthor(site_name)
+
+    # Frame
+    c.setFillColor(colors.white)
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setStrokeColor(NAVY)
+    c.setLineWidth(14)
+    c.rect(18, 18, w - 36, h - 36)
+    c.setStrokeColor(CYAN)
+    c.setLineWidth(2)
+    c.rect(34, 34, w - 68, h - 68)
+    # Corner accents
+    c.setFillColor(CYAN)
+    for x, y in [(34, h - 40), (w - 74, h - 40), (34, 34), (w - 74, 34)]:
+        c.rect(x, y, 40, 6, stroke=0, fill=1)
+
+    logo = _logo_reader()
+    if logo:
+        iw, ih = logo.getSize()
+        lw = 250
+        lh = lw * ih / iw
+        c.drawImage(logo, (w - lw) / 2, h - 70 - lh, lw, lh, mask="auto")
+        top = h - 80 - lh
+    else:
+        c.setFont("Helvetica-Bold", 26)
+        c.setFillColor(NAVY)
+        c.drawCentredString(w / 2, h - 100, site_name)
+        top = h - 120
+
+    c.setFillColor(MUTED)
+    c.setFont("Helvetica-Bold", 13)
+    c.drawCentredString(w / 2, top - 22, "C E R T I F I C A T E   O F   C O M P L E T I O N")
+
+    c.setFont("Helvetica", 13)
+    c.setFillColor(colors.black)
+    c.drawCentredString(w / 2, top - 58, "This is to certify that")
+
+    name = cert.student.get_full_name() or cert.student.email
+    size = 34 if len(name) < 28 else 26
+    c.setFont("Helvetica-Bold", size)
+    c.setFillColor(NAVY)
+    c.drawCentredString(w / 2, top - 100, name)
+    c.setStrokeColor(CYAN)
+    c.setLineWidth(1.5)
+    c.line(w / 2 - 190, top - 110, w / 2 + 190, top - 110)
+
+    c.setFont("Helvetica", 13)
+    c.setFillColor(colors.black)
+    c.drawCentredString(w / 2, top - 138, "has successfully completed the course")
+    c.setFont("Helvetica-Bold", 22)
+    c.setFillColor(BLUE)
+    c.drawCentredString(w / 2, top - 170, cert.course_title)
+    if cert.grade:
+        c.setFont("Helvetica", 13)
+        c.setFillColor(colors.black)
+        c.drawCentredString(w / 2, top - 194, f"with grade {cert.grade}")
+
+    # Footer row: date | tagline | QR + number
+    y = 70
+    c.setFillColor(MUTED)
+    c.setFont("Helvetica", 10)
+    c.drawString(70, y + 30, "Issued on")
+    c.setFillColor(NAVY)
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(70, y + 12, timezone.localtime(cert.issued_at).strftime("%d %B %Y"))
+
+    c.setFillColor(MUTED)
+    c.setFont("Helvetica-Oblique", 11)
+    c.drawCentredString(w / 2, y + 12, tagline)
+
+    qr_size = 74
+    renderPDF.draw(_qr(verify_url, qr_size), c, w - 70 - qr_size, y - 6)
+    c.setFillColor(MUTED)
+    c.setFont("Helvetica", 9)
+    c.drawRightString(w - 80 - qr_size, y + 40, "Certificate No.")
+    c.setFillColor(NAVY)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawRightString(w - 80 - qr_size, y + 24, cert.certificate_number)
+    c.setFillColor(MUTED)
+    c.setFont("Helvetica", 8)
+    c.drawRightString(w - 80 - qr_size, y + 10, "Scan to verify")
+    c.drawRightString(w - 80 - qr_size, y, verify_url.replace("https://", "").replace("http://", ""))
+
+    if cert.is_revoked:
+        c.saveState()
+        c.setFillColor(colors.Color(0.85, 0.1, 0.1, alpha=0.25))
+        c.setFont("Helvetica-Bold", 90)
+        c.translate(w / 2, h / 2)
+        c.rotate(25)
+        c.drawCentredString(0, 0, "REVOKED")
+        c.restoreState()
+
+    c.showPage()
+    c.save()
+    return buf.getvalue()
+
+
+# ------------------------------------------------------------------ invoice / receipt
+def invoice_pdf(inv, amount_words):
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=16 * mm,
+        title=f"{inv.title} {inv.number}", author=inv.seller_name,
+    )
+    base = ParagraphStyle("b", fontName="Helvetica", fontSize=9.5, leading=13)
+    small = ParagraphStyle("s", parent=base, fontSize=8.5, leading=11.5, textColor=MUTED)
+    bold = ParagraphStyle("bd", parent=base, fontName="Helvetica-Bold")
+    h1 = ParagraphStyle("h1", parent=base, fontName="Helvetica-Bold", fontSize=18, leading=22, textColor=NAVY, alignment=TA_RIGHT)
+    right = ParagraphStyle("r", parent=base, alignment=TA_RIGHT)
+    label = ParagraphStyle("l", parent=small, fontName="Helvetica-Bold", textColor=NAVY)
+
+    def p(text, style=base):
+        from django.utils.html import escape
+
+        return Paragraph(escape(text or "").replace("\n", "<br/>"), style)
+
+    story = []
+    logo_cell = ""
+    if LOGO.exists():
+        img = Image(str(LOGO))
+        ratio = img.imageHeight / img.imageWidth
+        img.drawWidth = 62 * mm
+        img.drawHeight = 62 * mm * ratio
+        logo_cell = img
+    head = Table(
+        [[logo_cell, [Paragraph(inv.title.upper(), h1),
+                      Paragraph(f"<b>No:</b> {inv.number}", right),
+                      Paragraph(f"<b>Date:</b> {timezone.localtime(inv.issued_at):%d %b %Y}", right)]]],
+        colWidths=[90 * mm, 84 * mm],
+    )
+    head.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
+    story += [head, Spacer(1, 6)]
+
+    seller = [Paragraph("FROM", label), p(inv.seller_name, bold), p(inv.seller_address)]
+    if inv.seller_state:
+        seller.append(p(f"State: {STATE_NAMES.get(inv.seller_state, '')} ({inv.seller_state})"))
+    if inv.seller_gstin:
+        seller.append(p(f"GSTIN: {inv.seller_gstin}", bold))
+    if inv.seller_email or inv.seller_phone:
+        seller.append(p(" · ".join(x for x in [inv.seller_email, inv.seller_phone] if x), small))
+    buyer = [Paragraph("BILL TO", label), p(inv.buyer_company or inv.buyer_name, bold)]
+    if inv.buyer_company:
+        buyer.append(p(f"Attn: {inv.buyer_name}"))
+    if inv.buyer_address:
+        buyer.append(p(inv.buyer_address))
+    if inv.buyer_state:
+        buyer.append(p(f"State: {STATE_NAMES.get(inv.buyer_state, '')} ({inv.buyer_state})"))
+    if inv.buyer_gstin:
+        buyer.append(p(f"GSTIN: {inv.buyer_gstin}", bold))
+    buyer.append(p(" · ".join(x for x in [inv.buyer_email, inv.buyer_phone] if x), small))
+    parties = Table([[seller, buyer]], colWidths=[87 * mm, 87 * mm])
+    parties.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BOX", (0, 0), (0, 0), 0.6, colors.HexColor("#dbe3ee")),
+        ("BOX", (1, 0), (1, 0), 0.6, colors.HexColor("#dbe3ee")),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f7f9fc")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story += [parties, Spacer(1, 10)]
+
+    if inv.is_tax_invoice:
+        header = ["#", "Description", "SAC", "Taxable value", f"GST {inv.gst_rate:g}%", "Amount"]
+        row = ["1", p(inv.description), inv.sac_code, money(inv.taxable_value), money(inv.tax_total), money(inv.total)]
+        widths = [8 * mm, 74 * mm, 18 * mm, 26 * mm, 22 * mm, 26 * mm]
+    else:
+        header = ["#", "Description", "Amount"]
+        row = ["1", p(inv.description), money(inv.total)]
+        widths = [8 * mm, 140 * mm, 26 * mm]
+    items = Table([header, row], colWidths=widths, repeatRows=1)
+    items.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (-1, 0), (-1, -1), "RIGHT"), ("ALIGN", (-3, 0), (-2, -1), "RIGHT") if inv.is_tax_invoice else ("ALIGN", (0, 0), (0, 0), "LEFT"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEBELOW", (0, -1), (-1, -1), 0.6, colors.HexColor("#dbe3ee")),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story += [items, Spacer(1, 8)]
+
+    totals = []
+    if inv.is_tax_invoice:
+        totals.append(["Taxable value", money(inv.taxable_value)])
+        if inv.igst:
+            totals.append([f"IGST @ {inv.gst_rate:g}%", money(inv.igst)])
+        else:
+            half = inv.gst_rate / 2
+            totals += [[f"CGST @ {half:g}%", money(inv.cgst)], [f"SGST @ {half:g}%", money(inv.sgst)]]
+    totals.append(["Total paid", money(inv.total)])
+    tt = Table(totals, colWidths=[40 * mm, 30 * mm], hAlign="RIGHT")
+    tt.setStyle(TableStyle([
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"), ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"), ("TEXTCOLOR", (0, -1), (-1, -1), NAVY),
+        ("LINEABOVE", (0, -1), (-1, -1), 1, NAVY), ("TOPPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story += [tt, Spacer(1, 6), p(f"Amount in words: {amount_words}", bold), Spacer(1, 10)]
+
+    pay = Table([[p("Payment method", label), p("Reference", label), p("Status", label)],
+                 [p(inv.payment_method), p(inv.payment_reference or "—"), p("PAID", bold)]],
+                colWidths=[58 * mm, 80 * mm, 36 * mm])
+    pay.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#dbe3ee")),
+                             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f7f9fc"))]))
+    story += [pay, Spacer(1, 14)]
+
+    notes = ["This is a computer-generated document and does not require a signature."]
+    if inv.is_tax_invoice:
+        notes.insert(0, "Place of supply: " + (STATE_NAMES.get(inv.buyer_state or inv.seller_state, "") or "—")
+                     + ". Tax is not payable on reverse charge basis.")
+    else:
+        notes.insert(0, "No GST has been charged on this transaction.")
+    for n in notes:
+        story.append(p(n, small))
+    doc.build(story)
+    return buf.getvalue()

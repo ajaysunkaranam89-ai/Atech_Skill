@@ -406,7 +406,8 @@ class CertificateList(ManageListView):
                 o.issued_at.strftime("%d %b %Y"), o.grade or "—", badge(not o.is_revoked, "Revoked" if o.is_revoked else "Valid")]
 
     def actions(self, o):
-        acts = [{"label": "View", "url": reverse("portal:certificate", args=[o.certificate_number]), "icon": "award"}]
+        acts = [{"label": "View", "url": reverse("portal:certificate", args=[o.certificate_number]), "icon": "award"},
+                {"label": "PDF", "url": reverse("portal:certificate_pdf", args=[o.certificate_number]), "icon": "file-earmark-pdf"}]
         acts.append({"label": "Restore" if o.is_revoked else "Revoke", "url": reverse("dashboard:certificate_revoke", args=[o.pk]),
                      "icon": "slash-circle", "post": {"x": "1"}, "danger": not o.is_revoked})
         return acts

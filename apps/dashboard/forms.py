@@ -107,7 +107,7 @@ class CourseForm(StyledModelForm):
             "title", "category", "short_description", "description", "thumbnail", "promo_video_url",
             "price", "discounted_price", "duration_text", "duration_hours", "level", "mode", "language",
             "syllabus", "learning_objectives", "prerequisites", "target_audience",
-            "trainers", "access_days", "is_featured", "certificate_enabled", "status",
+            "trainers", "access_days", "is_featured", "certificate_enabled", "auto_issue_certificate", "status",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 6}),
@@ -128,7 +128,7 @@ class CourseForm(StyledModelForm):
         ("Pricing", ["price", "discounted_price", "access_days"]),
         ("Format", ["duration_text", "duration_hours", "level", "mode", "language"]),
         ("Curriculum", ["syllabus", "learning_objectives", "prerequisites", "target_audience"]),
-        ("Trainers & publishing", ["trainers", "is_featured", "certificate_enabled", "status"]),
+        ("Trainers & publishing", ["trainers", "is_featured", "certificate_enabled", "auto_issue_certificate", "status"]),
     ]
 
     def limit_querysets(self):
@@ -449,6 +449,24 @@ class AnnouncementForm(StyledModelForm):
 
 
 class SiteSettingsForm(StyledModelForm):
+    def clean_gstin(self):
+        import re
+
+        v = (self.cleaned_data.get("gstin") or "").strip().upper()
+        if v and not re.fullmatch(r"\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]", v):
+            raise forms.ValidationError("Enter a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5).")
+        return v
+
+    def clean(self):
+        cd = super().clean()
+        if cd.get("invoice_mode") == "gst" and not cd.get("gstin"):
+            self.add_error("gstin", "Enter your GSTIN to issue invoices with GST, or choose 'Without GST'.")
+        if cd.get("gstin") and not cd.get("business_state"):
+            self.add_error("business_state", "Select your state of GST registration.")
+        if cd.get("gstin") and cd.get("business_state") and cd["gstin"][:2] != cd["business_state"]:
+            self.add_error("business_state", "State does not match the first two digits of your GSTIN.")
+        return cd
+
     class Meta:
         model = SiteSettings
         exclude = ["updated_at"]
@@ -467,6 +485,7 @@ class SiteSettingsForm(StyledModelForm):
         ("Contact details", ["legal_business_name", "contact_email", "contact_phone", "whatsapp_number", "address"]),
         ("Social links", ["facebook_url", "instagram_url", "linkedin_url", "youtube_url"]),
         ("Payments", ["razorpay_enabled", "upi_enabled", "upi_id", "upi_payee_name", "upi_qr_code", "upi_instructions"]),
+        ("Invoices & GST", ["invoice_mode", "gstin", "business_state", "gst_rate", "sac_code", "invoice_prefix"]),
         ("Notifications & sign-up", ["email_notifications_enabled", "require_email_verification"]),
         ("Policy pages (Razorpay requires these)", ["refund_window_days", "terms_conditions", "privacy_policy", "refund_policy"]),
     ]

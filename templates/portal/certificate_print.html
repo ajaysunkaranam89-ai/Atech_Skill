@@ -3,7 +3,8 @@
 {% block title %}Certificate {{ c.certificate_number }}{% endblock %}
 {% block body %}
 <div class="text-center my-3 no-print">
-  <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print / Save as PDF</button>
+  <a class="btn btn-primary" href="{% url 'portal:certificate_pdf' c.certificate_number %}"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a>
+  <button class="btn btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
   <a class="btn btn-outline-secondary" href="{% url 'portal:certificates' %}">Back</a>
 </div>
 <div class="certificate">

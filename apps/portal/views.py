@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.core.private_files import serve_private
+from apps.courses.certificates import maybe_issue_certificate
 from apps.courses.access import (
     active_enrollments,
     can_manage_course,
@@ -163,8 +164,15 @@ def lesson_complete(request, pk):
     p.completed_at = timezone.now() if completed else None
     p.save()
     prog = course_progress(request.user, lesson.module.course)
+    cert = maybe_issue_certificate(request.user, lesson.module.course) if completed else None
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return JsonResponse({"ok": True, "completed": completed, "progress": prog})
+        return JsonResponse({
+            "ok": True, "completed": completed, "progress": prog,
+            "certificate": cert.certificate_number if cert else None,
+            "certificate_url": reverse("portal:certificate", args=[cert.certificate_number]) if cert else None,
+        })
+    if cert:
+        messages.success(request, f"Congratulations! You completed the course. Certificate {cert.certificate_number} has been issued.")
     nxt = request.POST.get("next")
     if nxt and nxt.startswith("/learn/"):
         return redirect(nxt)
@@ -271,6 +279,48 @@ def certificate(request, number):
 @login_required
 def payments(request):
     return render(request, "portal/payments.html", {
-        "payments": Payment.objects.filter(student=request.user).order_by("-created_at"),
+        "payments": Payment.objects.filter(student=request.user).select_related("invoice").order_by("-created_at"),
         "upi": UpiPaymentSubmission.objects.filter(student=request.user).select_related("course"),
     })
+
+
+# ------------------------------------------------------------------ PDFs
+def _pdf_response(data, filename):
+    from django.http import HttpResponse
+
+    resp = HttpResponse(data, content_type="application/pdf")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    resp["Cache-Control"] = "private, no-store"
+    return resp
+
+
+@login_required
+def certificate_pdf(request, number):
+    from django.conf import settings as dj_settings
+
+    from apps.core.models import SiteSettings
+    from apps.core.pdf import certificate_pdf as render
+
+    c = get_object_or_404(Certificate.objects.select_related("student"), certificate_number=number)
+    if not (c.student_id == request.user.pk or request.user.can_manage_all_content):
+        raise PermissionDenied
+    if c.is_revoked and not request.user.can_manage_all_content:
+        raise Http404
+    site = SiteSettings.load()
+    verify = dj_settings.SITE_URL + reverse("core:certificate_verify", args=[c.certificate_number])
+    return _pdf_response(render(c, verify, site.site_name, site.tagline), f"Certificate-{c.certificate_number}.pdf")
+
+
+@login_required
+def invoice_pdf(request, payment_id):
+    from apps.core.pdf import invoice_pdf as render
+    from apps.enrollments.invoicing import amount_in_words, issue_invoice
+    from apps.enrollments.models import PaymentStatus
+
+    payment = get_object_or_404(Payment.objects.select_related("student"), pk=payment_id)
+    if not (payment.student_id == request.user.pk or request.user.is_super_admin):
+        raise PermissionDenied
+    if payment.status != PaymentStatus.PAID:
+        raise Http404("No invoice for unpaid payments")
+    inv = issue_invoice(payment)  # returns existing invoice, or creates one for older payments
+    return _pdf_response(render(inv, amount_in_words(inv.total)), f"{inv.number.replace('/', '-')}.pdf")

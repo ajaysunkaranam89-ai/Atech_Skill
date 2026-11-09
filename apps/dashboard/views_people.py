@@ -276,6 +276,8 @@ class PaymentList(ManageListView):
                 o.amount, o.razorpay_payment_id or o.upi_reference or o.razorpay_order_id or "—", badge(o.status, o.get_status_display())]
 
     def actions(self, o):
+        if o.status == PaymentStatus.PAID:
+            return [{"label": "Invoice", "url": reverse("portal:invoice_pdf", args=[o.pk]), "icon": "file-earmark-pdf"}]
         return []
 
 

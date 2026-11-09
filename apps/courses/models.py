@@ -118,6 +118,10 @@ class Course(TimeStampedModel):
     )
     is_featured = models.BooleanField(default=False)
     certificate_enabled = models.BooleanField(default=True)
+    auto_issue_certificate = models.BooleanField(
+        default=True,
+        help_text="Issue the certificate automatically when a student completes every published lesson",
+    )
 
     status = models.CharField(max_length=20, choices=CourseStatus.choices, default=CourseStatus.DRAFT, db_index=True)
     published_at = models.DateTimeField(null=True, blank=True)

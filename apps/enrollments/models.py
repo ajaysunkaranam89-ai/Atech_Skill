@@ -166,3 +166,66 @@ class UpiPaymentSubmission(TimeStampedModel):
         if self.course_id and not self.course_title:
             self.course_title = self.course.title
         super().save(*args, **kwargs)
+
+
+class InvoiceSequence(models.Model):
+    """Gap-free invoice counter per financial year (Apr–Mar), as GST rules expect."""
+
+    financial_year = models.CharField(max_length=7, unique=True)  # e.g. "2026-27"
+    last_number = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.financial_year}: {self.last_number}"
+
+
+class Invoice(models.Model):
+    """Immutable snapshot of a paid payment. Seller/buyer details are copied at issue time
+    so later changes to Website settings or profiles never alter an issued invoice."""
+
+    payment = models.OneToOneField(Payment, on_delete=models.PROTECT, related_name="invoice")
+    number = models.CharField(max_length=40, unique=True)
+    issued_at = models.DateTimeField(default=timezone.now)
+    is_tax_invoice = models.BooleanField(default=False, help_text="False = Payment Receipt (seller not GST-registered)")
+
+    # Seller snapshot
+    seller_name = models.CharField(max_length=200)
+    seller_address = models.TextField(blank=True)
+    seller_gstin = models.CharField(max_length=15, blank=True)
+    seller_state = models.CharField(max_length=2, blank=True)
+    seller_email = models.CharField(max_length=254, blank=True)
+    seller_phone = models.CharField(max_length=30, blank=True)
+
+    # Buyer snapshot
+    buyer_name = models.CharField(max_length=200)
+    buyer_email = models.CharField(max_length=254)
+    buyer_phone = models.CharField(max_length=30, blank=True)
+    buyer_company = models.CharField(max_length=200, blank=True)
+    buyer_gstin = models.CharField(max_length=15, blank=True)
+    buyer_address = models.TextField(blank=True)
+    buyer_state = models.CharField(max_length=2, blank=True)
+
+    # Line + tax
+    description = models.CharField(max_length=255)
+    sac_code = models.CharField(max_length=10, blank=True)
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    taxable_value = models.DecimalField(max_digits=10, decimal_places=2)
+    cgst = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    sgst = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    igst = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=40)
+    payment_reference = models.CharField(max_length=80, blank=True)
+
+    class Meta:
+        ordering = ["-issued_at"]
+
+    def __str__(self):
+        return self.number
+
+    @property
+    def title(self):
+        return "Tax Invoice" if self.is_tax_invoice else "Payment Receipt"
+
+    @property
+    def tax_total(self):
+        return self.cgst + self.sgst + self.igst

@@ -18,5 +18,7 @@ urlpatterns = [
     path("upi/<int:pk>/screenshot/", views.upi_screenshot, name="upi_screenshot"),
     path("certificates/", views.certificates, name="certificates"),
     path("certificates/<str:number>/", views.certificate, name="certificate"),
+    path("certificates/<str:number>/pdf/", views.certificate_pdf, name="certificate_pdf"),
+    path("payments/<int:payment_id>/invoice.pdf", views.invoice_pdf, name="invoice_pdf"),
     path("payments/", views.payments, name="payments"),
 ]

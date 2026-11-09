@@ -3,12 +3,13 @@
 {% block title %}Payments{% endblock %}
 {% block content %}
 <div class="container py-4">
-  <h1 class="h3 section-title mb-3">Payments</h1>
+  <h1 class="h3 section-title mb-1">Payments</h1>
+  <p class="small text-muted mb-3">Need your company name, GSTIN or state on invoices? Add them in your <a href="{% url 'accounts:profile' %}">profile</a> before paying.</p>
   <div class="card mb-4"><div class="card-header fw-semibold">Payment history</div>
     <div class="table-responsive"><table class="table table-manage mb-0">
-      <thead><tr><th>Date</th><th>Course</th><th>Method</th><th>Amount</th><th>Reference</th><th>Status</th></tr></thead>
-      <tbody>{% for p in payments %}<tr><td class="small">{{ p.created_at|date:"d M Y H:i" }}</td><td>{{ p.course_title }}</td><td>{{ p.get_gateway_display }}</td><td>₹{{ p.amount }}</td><td class="small">{{ p.razorpay_payment_id|default:p.upi_reference|default:"—" }}</td><td>{% status_badge p.status p.get_status_display %}</td></tr>
-      {% empty %}<tr><td colspan="6" class="small text-muted">No payments yet.</td></tr>{% endfor %}</tbody>
+      <thead><tr><th>Date</th><th>Course</th><th>Method</th><th>Amount</th><th>Reference</th><th>Status</th><th>Invoice</th></tr></thead>
+      <tbody>{% for p in payments %}<tr><td class="small">{{ p.created_at|date:"d M Y H:i" }}</td><td>{{ p.course_title }}</td><td>{{ p.get_gateway_display }}</td><td>₹{{ p.amount }}</td><td class="small">{{ p.razorpay_payment_id|default:p.upi_reference|default:"—" }}</td><td>{% status_badge p.status p.get_status_display %}</td><td>{% if p.status == 'paid' %}<a class="btn btn-sm btn-outline-primary" href="{% url 'portal:invoice_pdf' p.pk %}"><i class="bi bi-download me-1"></i>{% if p.invoice %}{{ p.invoice.number }}{% else %}Download{% endif %}</a>{% else %}—{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="7" class="small text-muted">No payments yet.</td></tr>{% endfor %}</tbody>
     </table></div>
   </div>
   {% if upi %}

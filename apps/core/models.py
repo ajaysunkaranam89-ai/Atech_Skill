@@ -4,6 +4,7 @@ from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django.utils.deconstruct import deconstructible
 
+from .india import STATE_CHOICES
 from .validators import validate_image_upload
 
 
@@ -89,6 +90,22 @@ class SiteSettings(models.Model):
     privacy_policy = models.TextField(blank=True, help_text=POLICY_HELP)
     terms_conditions = models.TextField("Terms & conditions", blank=True, help_text=POLICY_HELP)
     refund_policy = models.TextField("Refund & cancellation policy", blank=True, help_text=POLICY_HELP)
+    # Invoicing / GST
+    INVOICE_MODE_GST = "gst"
+    INVOICE_MODE_RECEIPT = "receipt"
+    invoice_mode = models.CharField(
+        max_length=10,
+        choices=[(INVOICE_MODE_RECEIPT, "Without GST (Payment Receipt)"), (INVOICE_MODE_GST, "With GST (Tax Invoice)")],
+        default=INVOICE_MODE_RECEIPT,
+        help_text="Applies to payments verified from now on. Already-issued invoices never change.",
+    )
+    gstin = models.CharField(
+        "GSTIN", max_length=15, blank=True, help_text="Required for 'With GST' mode. You can keep it saved in either mode.",
+    )
+    business_state = models.CharField(max_length=2, choices=STATE_CHOICES, blank=True, help_text="State of registration")
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18, help_text="GST % included in course prices")
+    sac_code = models.CharField("SAC code", max_length=10, default="999293", help_text="999293 = commercial training & coaching")
+    invoice_prefix = models.CharField(max_length=10, default="ATSA", help_text="Invoice numbers look like ATSA/2026-27/0001")
     refund_window_days = models.PositiveSmallIntegerField(
         default=7, help_text="Used by the standard refund policy template"
     )

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
+from apps.core.india import STATE_CHOICES
 from apps.core.validators import validate_image_upload
 
 
@@ -99,6 +100,11 @@ class StudentProfile(models.Model):
     current_role = models.CharField(max_length=150, blank=True)
     linkedin_url = models.URLField(blank=True)
     photo = models.ImageField(upload_to="profiles/", blank=True, validators=[validate_image_upload])
+    # Billing details printed on invoices (state decides CGST+SGST vs IGST).
+    state = models.CharField("State", max_length=2, choices=STATE_CHOICES, blank=True)
+    billing_name = models.CharField(max_length=200, blank=True, help_text="Company name, if your employer is paying")
+    billing_gstin = models.CharField("GSTIN", max_length=15, blank=True, help_text="Only if you need a B2B GST invoice")
+    billing_address = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
