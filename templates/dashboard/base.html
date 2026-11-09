@@ -1,9 +1,10 @@
 {% extends "base_html.html" %}
+{% load static %}
 {% block title %}{{ title|default:"Admin" }}{% endblock %}
 {% block body_class %}dash-body{% endblock %}
 {% block body %}
 <aside class="dash-sidebar" aria-label="Admin navigation">
-  <a class="brand" href="{% url 'dashboard:overview' %}"><span class="brand-mark">TS</span><span>Admin Console</span></a>
+  <a class="brand flex-column align-items-start" href="{% url 'dashboard:overview' %}"><img src="{% static 'img/logo-dark.png' %}" alt="{{ academy.site_name }}" class="sidebar-logo" width="200" height="73"><span class="small text-white-50 mt-1 ps-1">Admin Console</span></a>
   {% with s=section %}
   <nav class="nav flex-column pb-4">
     <div class="nav-section">Overview</div>

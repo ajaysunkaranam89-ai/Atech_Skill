@@ -5,6 +5,7 @@ All secrets and environment-specific values come from environment variables
 (see .env.example). Nothing sensitive is hard-coded here.
 """
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -133,6 +134,17 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = Path(env("STATIC_ROOT", BASE_DIR / "staticfiles"))
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Hashed filenames (app.3f2a1c.css) in production so browsers never serve stale CSS/JS/logos
+# after a deploy. Plain storage for local dev and the test runner.
+_TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        if (DEBUG or _TESTING)
+        else "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+    },
+}
 
 # Public media: course thumbnails, video thumbnails, site logo. Served directly by Nginx.
 MEDIA_URL = "/media/"

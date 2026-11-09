@@ -1,4 +1,5 @@
 {% extends "base_html.html" %}
+{% load static %}
 {% block title %}Certificate {{ c.certificate_number }}{% endblock %}
 {% block body %}
 <div class="text-center my-3 no-print">
@@ -7,7 +8,7 @@
 </div>
 <div class="certificate">
   {% if c.is_revoked %}<div class="alert alert-danger">This certificate has been revoked.</div>{% endif %}
-  <div class="d-flex justify-content-center align-items-center mb-3"><span class="brand-mark" style="width:56px;height:56px;font-size:1.4rem">TS</span><span class="brand fs-3 text-navy">{{ academy.site_name }}</span></div>
+  <img src="{% static 'img/logo-full.png' %}" alt="{{ academy.site_name }}" class="mb-4" style="max-width:420px;width:70%">
   <div class="text-uppercase text-muted" style="letter-spacing:.3em">Certificate of Completion</div>
   <p class="mt-4 mb-2">This is to certify that</p>
   <div class="cert-name">{{ c.student.get_full_name|default:c.student.email }}</div>

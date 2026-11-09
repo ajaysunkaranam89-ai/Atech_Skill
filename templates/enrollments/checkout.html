@@ -101,7 +101,7 @@
         loadRzp(function () {
           const rzp = new Razorpay({
             key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description,
-            prefill: o.prefill, theme: { color: "#0b1f3a" },
+            prefill: o.prefill, theme: { color: "#000f2f" },
             handler: function (resp) {
               const f = document.getElementById("rzp-verify");
               f.razorpay_order_id.value = resp.razorpay_order_id;

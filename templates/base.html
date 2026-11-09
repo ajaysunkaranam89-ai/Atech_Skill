@@ -1,10 +1,10 @@
 {% extends "base_html.html" %}
+{% load static %}
 {% block body %}
 <nav class="navbar navbar-expand-lg navbar-dark navbar-ts sticky-top">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center" href="{% url 'core:home' %}">
-      {% if academy.logo %}<img src="{{ academy.logo.url }}" alt="" class="brand-logo">{% else %}<span class="brand-mark">TS</span>{% endif %}
-      <span class="brand">{{ academy.site_name }}</span>
+      {% if academy.logo %}<img src="{{ academy.logo.url }}" alt="{{ academy.site_name }}" class="brand-logo">{% else %}<img src="{% static 'img/logo-dark.png' %}" alt="{{ academy.site_name }}" class="brand-logo" width="146" height="53">{% endif %}
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
     <div class="collapse navbar-collapse" id="mainNav">
@@ -44,7 +44,7 @@
   <div class="container">
     <div class="row g-4">
       <div class="col-md-5">
-        <div class="d-flex align-items-center mb-2"><span class="brand-mark">TS</span><span class="brand text-white fs-5">{{ academy.site_name }}</span></div>
+        <img src="{% static 'img/logo-dark.png' %}" alt="{{ academy.site_name }}" class="footer-logo mb-3" width="220" height="80" loading="lazy">
         <p class="mb-2">{{ academy.tagline }}</p>
         {% if academy.footer_text %}<p class="small">{{ academy.footer_text }}</p>{% endif %}
       </div>
