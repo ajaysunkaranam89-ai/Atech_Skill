@@ -1,0 +1,24 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card border-danger" style="max-width:720px">
+  <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-octagon me-2"></i>{{ title }}</div>
+  <div class="card-body">
+    <p class="fs-5 mb-2">You are about to permanently delete <strong>“{{ object }}”</strong>.</p>
+    {% if warning %}<div class="alert alert-warning small">{{ warning }}</div>{% endif %}
+    {% if impact %}
+    <ul class="list-group mb-3">{% for label, n in impact %}<li class="list-group-item d-flex justify-content-between">{{ label }}<span class="badge text-bg-secondary">{{ n }}</span></li>{% endfor %}</ul>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {% if require_typed %}
+        <label class="form-label" for="confirm_text">Type <code>{{ confirm_text }}</code> to confirm:</label>
+        <input id="confirm_text" name="confirm_text" class="form-control mb-3" autocomplete="off" data-typed-confirm="delete-btn" data-expected="{{ confirm_text }}">
+      {% endif %}
+      <div class="d-flex gap-2">
+        <button id="delete-btn" class="btn btn-danger" type="submit" data-confirm="This cannot be undone. Delete now?"><i class="bi bi-trash me-1"></i>Delete permanently</button>
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

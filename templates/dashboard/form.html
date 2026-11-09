@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h4 mb-0 text-navy">{{ title }}</h1>
+  <a href="{{ cancel_url }}" class="btn btn-sm btn-link ms-auto">← Back</a>
+</div>
+<form method="post" enctype="multipart/form-data" novalidate {% if upload_progress %}data-upload-progress{% endif %} style="max-width: 980px">
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  {% if fieldsets %}
+    {% for legend, names in fieldsets %}
+    <div class="form-section"><h6>{{ legend }}</h6>
+      <div class="row">{% for field in form %}{% if field.name in names %}<div class="{% if field.field.widget.input_type == 'checkbox' %}col-md-4{% elif field.field.widget.attrs.rows %}col-12{% else %}col-md-6{% endif %}">{% include "partials/field.html" %}</div>{% endif %}{% endfor %}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="form-section">
+      <div class="row">{% for field in form %}<div class="{% if field.field.widget.attrs.rows %}col-12{% else %}col-md-6{% endif %}">{% include "partials/field.html" %}</div>{% endfor %}</div>
+    </div>
+  {% endif %}
+  <div class="upload-progress form-section">
+    <div class="small upload-label mb-1">Uploading…</div>
+    <div class="progress" style="height:1.2rem"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%">0%</div></div>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary px-4" type="submit"><i class="bi bi-check2 me-1"></i>Save</button>
+    <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

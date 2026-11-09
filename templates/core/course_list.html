@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Courses{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <h1 class="h2 fw-bold mb-1">Courses</h1>
+    <p class="mb-0 text-white-50">{{ page.paginator.count }} course{{ page.paginator.count|pluralize }} available</p>
+  </div>
+</div>
+<div class="container py-4">
+  <form class="card card-body mb-4" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4"><label class="form-label small">Search</label><input type="search" class="form-control" name="q" value="{{ q }}" placeholder="Course name or topic"></div>
+      <div class="col-md-3"><label class="form-label small">Category</label>
+        <select class="form-select" name="category"><option value="">All categories</option>{% for c in categories %}<option value="{{ c.slug }}" {% if c.slug == cat %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><label class="form-label small">Level</label>
+        <select class="form-select" name="level"><option value="">Any</option>{% for v, l in levels %}<option value="{{ v }}" {% if v == level %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><label class="form-label small">Sort</label>
+        <select class="form-select" name="sort"><option value="">Featured</option><option value="new" {% if sort == 'new' %}selected{% endif %}>Newest</option><option value="price" {% if sort == 'price' %}selected{% endif %}>Price: low to high</option><option value="-price" {% if sort == '-price' %}selected{% endif %}>Price: high to low</option></select></div>
+      <div class="col-md-1 d-grid"><button class="btn btn-primary">Go</button></div>
+    </div>
+  </form>
+  {% if page.object_list %}
+  <div class="row g-4">
+    {% for course in page.object_list %}<div class="col-sm-6 col-lg-4">{% include "partials/course_card.html" %}</div>{% endfor %}
+  </div>
+  {% include "partials/pagination.html" with p=page %}
+  {% else %}
+  <div class="card"><div class="empty-state"><i class="bi bi-search"></i><h5 class="mt-3">No courses match your search</h5><a href="{% url 'core:course_list' %}">Clear filters</a></div></div>
+  {% endif %}
+</div>
+{% endblock %}

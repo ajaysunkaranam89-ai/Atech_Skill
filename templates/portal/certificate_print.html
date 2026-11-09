@@ -1,0 +1,24 @@
+{% extends "base_html.html" %}
+{% block title %}Certificate {{ c.certificate_number }}{% endblock %}
+{% block body %}
+<div class="text-center my-3 no-print">
+  <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print / Save as PDF</button>
+  <a class="btn btn-outline-secondary" href="{% url 'portal:certificates' %}">Back</a>
+</div>
+<div class="certificate">
+  {% if c.is_revoked %}<div class="alert alert-danger">This certificate has been revoked.</div>{% endif %}
+  <div class="d-flex justify-content-center align-items-center mb-3"><span class="brand-mark" style="width:56px;height:56px;font-size:1.4rem">TS</span><span class="brand fs-3 text-navy">{{ academy.site_name }}</span></div>
+  <div class="text-uppercase text-muted" style="letter-spacing:.3em">Certificate of Completion</div>
+  <p class="mt-4 mb-2">This is to certify that</p>
+  <div class="cert-name">{{ c.student.get_full_name|default:c.student.email }}</div>
+  <p class="mt-4 mb-1">has successfully completed the course</p>
+  <h2 class="text-navy fw-bold">{{ c.course_title }}</h2>
+  {% if c.grade %}<p>with grade <strong>{{ c.grade }}</strong></p>{% endif %}
+  <div class="row mt-5 align-items-end">
+    <div class="col text-start small">Issued on<br><strong>{{ c.issued_at|date:"d F Y" }}</strong></div>
+    <div class="col small"><em>{{ academy.tagline }}</em></div>
+    <div class="col text-end small">Certificate No.<br><strong>{{ c.certificate_number }}</strong></div>
+  </div>
+  <p class="small text-muted mt-4 mb-0">Verify at {{ request.scheme }}://{{ request.get_host }}{% url 'core:certificate_verify' c.certificate_number %}</p>
+</div>
+{% endblock %}

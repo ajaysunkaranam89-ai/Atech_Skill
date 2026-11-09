@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Certificate verification{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width:640px">
+  <div class="card card-body text-center p-5">
+    {% if cert and not cert.is_revoked %}
+      <i class="bi bi-patch-check-fill text-success" style="font-size:3rem"></i>
+      <h1 class="h3 mt-3">Valid certificate</h1>
+      <p class="mb-1"><strong>{{ cert.student.get_full_name|default:cert.student.email }}</strong></p>
+      <p class="mb-1">completed <strong>{{ cert.course_title }}</strong></p>
+      <p class="text-muted small">Certificate {{ cert.certificate_number }} · issued {{ cert.issued_at|date:"d M Y" }}{% if cert.grade %} · Grade {{ cert.grade }}{% endif %}</p>
+    {% elif cert %}
+      <i class="bi bi-x-octagon-fill text-danger" style="font-size:3rem"></i>
+      <h1 class="h3 mt-3">Certificate revoked</h1>
+      <p class="text-muted">Certificate {{ cert.certificate_number }} is no longer valid.</p>
+    {% else %}
+      <i class="bi bi-question-octagon text-warning" style="font-size:3rem"></i>
+      <h1 class="h3 mt-3">Not found</h1>
+      <p class="text-muted">No certificate with number “{{ number }}” exists.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

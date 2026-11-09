@@ -1,0 +1,112 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Builder: {{ course.title }}{% endblock %}
+{% block page_title %}Course builder{% endblock %}
+{% block content %}
+<div class="card card-body mb-3">
+  <div class="d-flex flex-wrap gap-3 align-items-center">
+    {% if course.thumbnail %}<img src="{{ course.thumbnail.url }}" alt="" style="width:120px;aspect-ratio:16/9;object-fit:cover" class="rounded">{% endif %}
+    <div class="me-auto">
+      <h1 class="h4 mb-1 text-navy">{{ course.title }}</h1>
+      <div class="small text-muted">{{ course.category|default:"Uncategorised" }} · {{ course.effective_price|inr }} · {% status_badge course.status course.get_status_display %}</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-sm btn-outline-secondary" href="{{ course.get_absolute_url }}" target="_blank"><i class="bi bi-eye me-1"></i>Preview page</a>
+      {% if can_edit_course %}
+      <a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:course_edit' course.pk %}"><i class="bi bi-pencil me-1"></i>Edit details</a>
+      <form method="post" action="{% url 'dashboard:course_status' course.pk %}" class="d-flex gap-1">{% csrf_token %}
+        {% if course.status != 'published' %}<button name="action" value="publish" class="btn btn-sm btn-success" data-confirm="Publish this course to the public catalogue?"><i class="bi bi-send-check me-1"></i>Publish</button>{% endif %}
+        {% if course.status == 'published' %}<button name="action" value="unpublish" class="btn btn-sm btn-outline-dark" data-confirm="Hide this course from the catalogue? Enrolled students keep access."><i class="bi bi-eye-slash me-1"></i>Unpublish</button>{% endif %}
+        {% if course.status != 'archived' %}<button name="action" value="archive" class="btn btn-sm btn-outline-secondary" data-confirm="Archive this course?"><i class="bi bi-archive me-1"></i>Archive</button>{% endif %}
+        {% if course.status != 'draft' %}<button name="action" value="draft" class="btn btn-sm btn-outline-secondary" data-confirm="Move this course back to draft?">Draft</button>{% endif %}
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="d-flex align-items-center mb-2">
+  <h2 class="h5 mb-0 text-navy">Modules & lessons</h2>
+  <span class="small text-muted ms-3"><i class="bi bi-arrows-move me-1"></i>Drag to reorder modules and lessons (lessons can move between modules).</span>
+  <span id="reorder-status" class="small ms-3"></span>
+  <a href="{% url 'dashboard:module_add' %}?course={{ course.pk }}" class="btn btn-cyan btn-sm ms-auto"><i class="bi bi-plus-lg me-1"></i>Add module</a>
+</div>
+
+<div id="modules" data-reorder-url="{% url 'dashboard:course_reorder' course.pk %}">
+  {% for m in modules %}
+  <div class="builder-module" data-module-id="{{ m.pk }}">
+    <div class="hdr">
+      <i class="bi bi-grip-vertical drag-handle module-handle fs-5" title="Drag module"></i>
+      <div class="me-auto"><strong>{{ m.title }}</strong> {% status_badge m.status m.get_status_display %}<div class="small text-muted">{{ m.lesson_list|length }} lesson{{ m.lesson_list|length|pluralize }}</div></div>
+      <form method="post" action="{% url 'dashboard:module_status' m.pk %}" class="d-inline">{% csrf_token %}
+        {% if m.status == 'published' %}<button name="status" value="unpublished" class="btn btn-sm btn-outline-dark" title="Unpublish module"><i class="bi bi-eye-slash"></i></button>
+        {% else %}<button name="status" value="published" class="btn btn-sm btn-outline-success" title="Publish module"><i class="bi bi-send-check"></i></button>{% endif %}
+      </form>
+      <a href="{% url 'dashboard:video_add' %}?module={{ m.pk }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Lesson</a>
+      <a href="{% url 'dashboard:module_edit' m.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit module"><i class="bi bi-pencil"></i></a>
+      <a href="{% url 'dashboard:module_delete' m.pk %}" class="btn btn-sm btn-outline-danger" title="Delete module"><i class="bi bi-trash"></i></a>
+    </div>
+    <div class="builder-lessons" data-module-id="{{ m.pk }}">
+      {% for l in m.lesson_list %}
+      <div class="builder-lesson" data-lesson-id="{{ l.pk }}">
+        <i class="bi bi-grip-vertical drag-handle"></i>
+        <i class="bi {% if l.active_video %}bi-camera-video text-cyan{% else %}bi-file-text text-muted{% endif %}"></i>
+        <div class="me-auto">
+          <span class="fw-medium">{{ l.title }}</span>
+          {% if l.is_free_preview %}<span class="badge text-bg-info">Free preview</span>{% endif %}
+          <div class="small text-muted">
+            {% if l.active_video %}{{ l.active_video.get_source_type_display }} · v{{ l.active_video.version }} ({{ l.active_video.get_status_display|lower }}){% else %}No video{% endif %}
+            · {{ l.n_resources }} material{{ l.n_resources|pluralize }}{% if l.duration_minutes %} · {{ l.duration_minutes|minutes }}{% endif %}
+          </div>
+        </div>
+        {% status_badge l.status l.get_status_display %}
+        <a href="{% url 'dashboard:lesson_preview' l.pk %}" class="btn btn-sm btn-outline-secondary" title="Preview"><i class="bi bi-play-circle"></i></a>
+        <a href="{% url 'dashboard:lesson_edit' l.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit lesson"><i class="bi bi-pencil"></i></a>
+        <a href="{% url 'dashboard:video_replace' l.pk %}" class="btn btn-sm btn-outline-secondary" title="{% if l.active_video %}Replace{% else %}Add{% endif %} video"><i class="bi bi-arrow-repeat"></i></a>
+        <a href="{% url 'dashboard:resource_add' %}?lesson={{ l.pk }}" class="btn btn-sm btn-outline-secondary" title="Add PDF / material"><i class="bi bi-file-earmark-plus"></i></a>
+        <form method="post" action="{% url 'dashboard:lesson_status' l.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          {% if l.status == 'published' %}<button name="status" value="unpublished" class="btn btn-sm btn-outline-dark" title="Unpublish" data-confirm="Unpublish this lesson? Students will no longer see it."><i class="bi bi-eye-slash"></i></button>
+          {% else %}<button name="status" value="published" class="btn btn-sm btn-outline-success" title="Publish"><i class="bi bi-send-check"></i></button>{% endif %}
+        </form>
+        <a href="{% url 'dashboard:lesson_delete' l.pk %}" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+      </div>
+      {% empty %}<div class="small text-muted px-2 py-2 empty-drop">No lessons yet — drag one here or <a href="{% url 'dashboard:video_add' %}?module={{ m.pk }}">add a lesson</a>.</div>{% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="card"><div class="empty-state"><i class="bi bi-diagram-3"></i><p class="mt-2">This course has no modules yet.</p><a href="{% url 'dashboard:module_add' %}?course={{ course.pk }}" class="btn btn-cyan btn-sm">Add the first module</a></div></div>
+  {% endfor %}
+</div>
+{% csrf_token %}
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+(function () {
+  const root = document.getElementById("modules");
+  if (!root || !window.Sortable) return;
+  const status = document.getElementById("reorder-status");
+  function save() {
+    const modules = Array.from(root.querySelectorAll(":scope > .builder-module")).map(m => m.dataset.moduleId);
+    const lessons = {};
+    root.querySelectorAll(".builder-lessons").forEach(function (box) {
+      lessons[box.dataset.moduleId] = Array.from(box.querySelectorAll(".builder-lesson")).map(l => l.dataset.lessonId);
+    });
+    status.textContent = "Saving order…"; status.className = "small ms-3 text-muted";
+    fetch(root.dataset.reorderUrl, {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": window.tsCsrf() },
+      body: JSON.stringify({ modules: modules, lessons: lessons })
+    }).then(r => r.json()).then(function (d) {
+      status.textContent = d.ok ? "✓ Order saved" : ("Error: " + d.error);
+      status.className = "small ms-3 " + (d.ok ? "text-success" : "text-danger");
+    }).catch(function () { status.textContent = "Could not save order"; status.className = "small ms-3 text-danger"; });
+  }
+  new Sortable(root, { handle: ".module-handle", draggable: ".builder-module", animation: 150, onEnd: save });
+  root.querySelectorAll(".builder-lessons").forEach(function (box) {
+    new Sortable(box, { group: "lessons", handle: ".drag-handle", draggable: ".builder-lesson", animation: 150, onEnd: save,
+      onAdd: function () { const e = box.querySelector(".empty-drop"); if (e) e.remove(); } });
+  });
+})();
+</script>
+{% endblock %}

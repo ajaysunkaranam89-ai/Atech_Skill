@@ -1,0 +1,13 @@
+.venv
+.git
+.env
+*.sqlite3
+__pycache__
+*.pyc
+media/
+private_media/
+staticfiles/
+backups/
+nginx/certs/
+.pytest_cache
+scripts/dev/

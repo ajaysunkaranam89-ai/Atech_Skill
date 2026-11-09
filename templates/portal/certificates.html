@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Certificates{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 section-title mb-3">My certificates</h1>
+  <div class="row g-3">
+    {% for c in items %}
+    <div class="col-md-6 col-lg-4"><div class="card card-body h-100">
+      <i class="bi bi-award text-cyan fs-1"></i>
+      <h2 class="h6 mt-2">{{ c.course_title }}</h2>
+      <p class="small text-muted mb-3">{{ c.certificate_number }} · {{ c.issued_at|date:"d M Y" }}{% if c.is_revoked %} · <span class="text-danger">revoked</span>{% endif %}</p>
+      {% if not c.is_revoked %}<a class="btn btn-sm btn-cyan mt-auto" href="{% url 'portal:certificate' c.certificate_number %}">View / print</a>{% endif %}
+    </div></div>
+    {% empty %}
+    <div class="col-12"><div class="card"><div class="empty-state"><i class="bi bi-award"></i><p class="mt-2 mb-0">Certificates appear here once the academy issues them after you complete a course.</p></div></div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

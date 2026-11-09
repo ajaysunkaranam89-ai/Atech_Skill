@@ -1,0 +1,11 @@
+.venv/
+.env
+*.sqlite3
+__pycache__/
+*.pyc
+media/
+private_media/
+staticfiles/
+backups/
+nginx/certs/
+nginx/certbot-www/

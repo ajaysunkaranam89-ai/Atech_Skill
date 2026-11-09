@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Dashboard overview{% endblock %}
+{% block page_title %}Dashboard overview{% endblock %}
+{% block content %}
+<h1 class="h4 text-navy mb-3">Welcome, {{ user.display_name }}</h1>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-journal-richtext"></i></div><div><div class="kpi-value">{{ stats.courses }}</div><div class="small text-muted">Courses ({{ stats.published }} published)</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-camera-reels"></i></div><div><div class="kpi-value">{{ stats.lessons }}</div><div class="small text-muted">Lessons</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-people"></i></div><div><div class="kpi-value">{{ stats.students }}</div><div class="small text-muted">Active students</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-inbox"></i></div><div><div class="kpi-value">{{ pending_submissions }}</div><div class="small text-muted">Submissions to grade</div></div></div></div>
+  {% if finance %}
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div><div><div class="kpi-value">₹{{ finance.revenue_month|floatformat:0 }}</div><div class="small text-muted">Revenue this month</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-cash-stack"></i></div><div><div class="kpi-value">₹{{ finance.revenue_total|floatformat:0 }}</div><div class="small text-muted">Total revenue</div></div></div></div>
+  <div class="col-6 col-xl-3"><a href="{% url 'dashboard:upi_list' %}" class="kpi d-flex gap-3 text-reset {% if finance.pending_upi %}border-warning{% endif %}"><div class="kpi-icon"><i class="bi bi-qr-code"></i></div><div><div class="kpi-value">{{ finance.pending_upi }}</div><div class="small text-muted">UPI payments to verify</div></div></a></div>
+  <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-person-plus"></i></div><div><div class="kpi-value">{{ finance.new_students_30d }}</div><div class="small text-muted">New sign-ups (30 days)</div></div></div></div>
+  {% endif %}
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex"><span class="fw-semibold">Recently updated lessons</span><a href="{% url 'dashboard:video_add' %}" class="ms-auto small">+ Add recorded video</a></div>
+      <ul class="list-group list-group-flush">
+        {% for l in recent_lessons %}
+        <li class="list-group-item d-flex align-items-center gap-2">
+          <div class="me-auto"><a href="{% url 'dashboard:video_history' l.pk %}" class="fw-medium">{{ l.title }}</a><div class="small text-muted">{{ l.module.course.title }} › {{ l.module.title }}</div></div>
+          {% status_badge l.status l.get_status_display %}<span class="small text-muted">{{ l.content_updated_at|timesince }} ago</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted small">No lessons yet. Start by <a href="{% url 'dashboard:courses' %}">creating a course</a>, adding modules, then recorded videos.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-4">
+      <div class="card-header d-flex"><span class="fw-semibold">Upcoming live classes</span><a href="{% url 'dashboard:live_add' %}" class="ms-auto small">+ Schedule</a></div>
+      <ul class="list-group list-group-flush">
+        {% for c in upcoming_classes %}
+        <li class="list-group-item"><div class="fw-medium">{{ c.title }}</div><div class="small text-muted">{{ c.start_at|date:"D d M, h:i A" }} · {{ c.batch.code }} · <a href="{{ c.meet_url }}" target="_blank" rel="noopener">Meet</a></div></li>
+        {% empty %}<li class="list-group-item small text-muted">No upcoming classes.</li>{% endfor %}
+      </ul>
+    </div>
+    {% if recent_payments %}
+    <div class="card">
+      <div class="card-header fw-semibold">Latest payments</div>
+      <ul class="list-group list-group-flush">
+        {% for p in recent_payments %}<li class="list-group-item d-flex small"><span class="me-auto">{{ p.student.email }}<br><span class="text-muted">{{ p.course_title }}</span></span><span class="text-end"><strong>₹{{ p.amount }}</strong><br><span class="text-muted">{{ p.get_gateway_display }}</span></span></li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Submissions: {{ assignment.title }}{% endblock %}
+{% block page_title %}Assignment management{% endblock %}
+{% block content %}
+<a href="{% url 'dashboard:assignments' %}" class="small">← Assignments</a>
+<h1 class="h4 text-navy mt-2">{{ assignment.title }}</h1>
+<p class="small text-muted">{{ assignment.course.title }} · max {{ assignment.max_marks }} marks{% if assignment.due_at %} · due {{ assignment.due_at|date:"d M Y H:i" }}{% endif %}</p>
+<div class="card">
+  <div class="table-responsive"><table class="table table-manage table-hover">
+    <thead><tr><th>Student</th><th>Submitted</th><th>Answer</th><th>Status</th><th>Marks</th><th></th></tr></thead>
+    <tbody>{% for s in subs %}
+      <tr><td>{{ s.student.get_full_name|default:s.student.email }}</td><td class="small">{{ s.submitted_at|date:"d M Y H:i" }}{% if assignment.due_at and s.submitted_at > assignment.due_at %} <span class="badge text-bg-warning">late</span>{% endif %}</td>
+        <td class="small">{% if s.file %}<a href="{% url 'portal:submission_file' s.pk %}"><i class="bi bi-paperclip"></i> file</a> {% endif %}{% if s.link %}<a href="{{ s.link }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-link-45deg"></i> link</a> {% endif %}{{ s.text_answer|truncatechars:60 }}</td>
+        <td>{% status_badge s.status s.get_status_display %}</td><td>{{ s.marks|default_if_none:"—" }}</td>
+        <td><a href="{% url 'dashboard:grade_submission' s.pk %}" class="btn btn-sm btn-outline-primary">Grade</a></td></tr>
+    {% empty %}<tr><td colspan="6" class="text-muted small">No submissions yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

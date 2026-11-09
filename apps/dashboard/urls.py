@@ -1,0 +1,94 @@
+from django.urls import path
+
+from . import views_content as vc
+from . import views_courses as vco
+from . import views_ops as vo
+from . import views_people as vp
+
+app_name = "dashboard"
+
+urlpatterns = [
+    path("", vo.overview, name="overview"),
+    # Course management
+    path("courses/", vco.CourseList.as_view(), name="courses"),
+    path("courses/add/", vco.CourseCreate.as_view(), name="course_add"),
+    path("courses/<int:pk>/", vco.course_builder, name="course_builder"),
+    path("courses/<int:pk>/edit/", vco.CourseUpdate.as_view(), name="course_edit"),
+    path("courses/<int:pk>/status/", vco.course_status, name="course_status"),
+    path("courses/<int:pk>/reorder/", vco.course_reorder, name="course_reorder"),
+    path("courses/<int:pk>/delete/", vco.CourseDelete.as_view(), name="course_delete"),
+    path("categories/", vco.CategoryList.as_view(), name="categories"),
+    path("categories/add/", vco.CategoryCreate.as_view(), name="category_add"),
+    path("categories/<int:pk>/edit/", vco.CategoryUpdate.as_view(), name="category_edit"),
+    path("categories/<int:pk>/delete/", vco.CategoryDelete.as_view(), name="category_delete"),
+    # Modules
+    path("modules/", vco.ModuleList.as_view(), name="modules"),
+    path("modules/add/", vco.ModuleCreate.as_view(), name="module_add"),
+    path("modules/<int:pk>/edit/", vco.ModuleUpdate.as_view(), name="module_edit"),
+    path("modules/<int:pk>/status/", vco.module_status, name="module_status"),
+    path("modules/<int:pk>/delete/", vco.ModuleDelete.as_view(), name="module_delete"),
+    # Recorded videos / lessons
+    path("videos/", vc.VideoLessonList.as_view(), name="videos"),
+    path("videos/add/", vc.video_add, name="video_add"),
+    path("lessons/<int:pk>/edit/", vc.LessonUpdate.as_view(), name="lesson_edit"),
+    path("lessons/<int:pk>/status/", vc.lesson_status, name="lesson_status"),
+    path("lessons/<int:pk>/delete/", vc.LessonDelete.as_view(), name="lesson_delete"),
+    path("lessons/<int:pk>/preview/", vc.lesson_preview, name="lesson_preview"),
+    path("lessons/<int:pk>/video/replace/", vc.video_replace, name="video_replace"),
+    path("lessons/<int:pk>/video/history/", vc.video_history, name="video_history"),
+    path("video-versions/<int:pk>/activate/", vc.video_activate, name="video_activate"),
+    path("video-versions/<int:pk>/edit/", vc.VideoAssetUpdate.as_view(), name="video_version_edit"),
+    path("video-versions/<int:pk>/delete/", vc.VideoAssetDelete.as_view(), name="video_version_delete"),
+    # Materials
+    path("materials/", vc.ResourceList.as_view(), name="resources"),
+    path("materials/add/", vc.ResourceCreate.as_view(), name="resource_add"),
+    path("materials/<int:pk>/edit/", vc.ResourceUpdate.as_view(), name="resource_edit"),
+    path("materials/<int:pk>/delete/", vc.ResourceDelete.as_view(), name="resource_delete"),
+    # Batches & live classes
+    path("batches/", vo.BatchList.as_view(), name="batches"),
+    path("batches/add/", vo.BatchCreate.as_view(), name="batch_add"),
+    path("batches/<int:pk>/", vo.batch_detail, name="batch_detail"),
+    path("batches/<int:pk>/edit/", vo.BatchUpdate.as_view(), name="batch_edit"),
+    path("batches/<int:pk>/delete/", vo.BatchDelete.as_view(), name="batch_delete"),
+    path("batches/<int:pk>/remove/<int:user_id>/", vo.batch_remove_student, name="batch_remove_student"),
+    path("live/", vo.LiveClassList.as_view(), name="live"),
+    path("live/add/", vo.LiveClassCreate.as_view(), name="live_add"),
+    path("live/<int:pk>/edit/", vo.LiveClassUpdate.as_view(), name="live_edit"),
+    path("live/<int:pk>/delete/", vo.LiveClassDelete.as_view(), name="live_delete"),
+    # People
+    path("students/", vp.StudentList.as_view(), name="students"),
+    path("students/add/", vp.StudentCreate.as_view(), name="student_add"),
+    path("students/<int:pk>/", vp.student_detail, name="student_detail"),
+    path("students/<int:pk>/edit/", vp.StudentUpdate.as_view(), name="student_edit"),
+    path("staff/", vp.StaffList.as_view(), name="staff"),
+    path("staff/add/", vp.StaffCreate.as_view(), name="staff_add"),
+    path("staff/<int:pk>/edit/", vp.StaffUpdate.as_view(), name="staff_edit"),
+    path("staff/<int:pk>/trainer-profile/", vp.trainer_profile, name="trainer_profile"),
+    path("enrollments/", vp.EnrollmentList.as_view(), name="enrollments"),
+    path("enrollments/add/", vp.EnrollmentCreate.as_view(), name="enrollment_add"),
+    path("enrollments/<int:pk>/edit/", vp.EnrollmentUpdate.as_view(), name="enrollment_edit"),
+    path("enrollments/<int:pk>/cancel/", vp.enrollment_cancel, name="enrollment_cancel"),
+    path("payments/", vp.PaymentList.as_view(), name="payments"),
+    path("payments/upi/", vp.UpiList.as_view(), name="upi_list"),
+    path("payments/upi/<int:pk>/", vp.upi_review, name="upi_review"),
+    # Assignments & certificates
+    path("assignments/", vo.AssignmentList.as_view(), name="assignments"),
+    path("assignments/add/", vo.AssignmentCreate.as_view(), name="assignment_add"),
+    path("assignments/<int:pk>/edit/", vo.AssignmentUpdate.as_view(), name="assignment_edit"),
+    path("assignments/<int:pk>/delete/", vo.AssignmentDelete.as_view(), name="assignment_delete"),
+    path("assignments/<int:pk>/submissions/", vo.submissions, name="submissions"),
+    path("submissions/<int:pk>/grade/", vo.grade_submission, name="grade_submission"),
+    path("certificates/", vo.CertificateList.as_view(), name="certificates"),
+    path("certificates/add/", vo.CertificateCreate.as_view(), name="certificate_add"),
+    path("certificates/<int:pk>/revoke/", vo.certificate_revoke, name="certificate_revoke"),
+    # Notifications
+    path("notifications/", vo.AnnouncementList.as_view(), name="announcements"),
+    path("notifications/add/", vo.AnnouncementCreate.as_view(), name="announcement_add"),
+    path("notifications/<int:pk>/edit/", vo.AnnouncementUpdate.as_view(), name="announcement_edit"),
+    path("notifications/<int:pk>/delete/", vo.AnnouncementDelete.as_view(), name="announcement_delete"),
+    path("notifications/log/", vo.NotificationLog.as_view(), name="notification_log"),
+    # Reports, settings, audit
+    path("reports/", vo.reports, name="reports"),
+    path("settings/", vo.site_settings, name="settings"),
+    path("audit/", vo.AuditLogList.as_view(), name="audit"),
+]

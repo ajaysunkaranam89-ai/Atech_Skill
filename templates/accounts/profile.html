@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:760px">
+  <h1 class="h3 section-title mb-3">My profile</h1>
+  <form method="post" enctype="multipart/form-data" class="card card-body">
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    <div class="row">
+      {% for field in form %}<div class="col-md-6">{% include "partials/field.html" %}</div>{% endfor %}
+    </div>
+    <p class="small text-muted">Email: <strong>{{ user.email }}</strong> (contact the academy to change it)</p>
+    {% if sform %}
+    <hr><h6>Learning profile</h6>
+    <div class="row">{% for field in sform %}<div class="col-md-6">{% include "partials/field.html" %}</div>{% endfor %}</div>
+    {% endif %}
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Save profile</button>
+      <a class="btn btn-outline-secondary" href="{% url 'accounts:password_change' %}">Change password</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

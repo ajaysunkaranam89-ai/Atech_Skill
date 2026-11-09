@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}UPI review {{ sub.utr_number }}{% endblock %}
+{% block page_title %}UPI payment verification{% endblock %}
+{% block content %}
+<a href="{% url 'dashboard:upi_list' %}" class="small">← Back to UPI queue</a>
+<div class="row g-4 mt-1">
+  <div class="col-lg-6">
+    <div class="card card-body">
+      <h1 class="h5 text-navy">UTR {{ sub.utr_number }} {% status_badge sub.status sub.get_status_display %}</h1>
+      <dl class="row small mb-0">
+        <dt class="col-5">Student</dt><dd class="col-7">{{ sub.student.get_full_name }}<br>{{ sub.student.email }}</dd>
+        <dt class="col-5">Course</dt><dd class="col-7">{{ sub.course_title }}</dd>
+        <dt class="col-5">Amount paid</dt><dd class="col-7 fw-bold {% if sub.course and sub.amount != sub.course.effective_price %}text-danger{% endif %}">₹{{ sub.amount }}</dd>
+        <dt class="col-5">Course fee</dt><dd class="col-7">{% if sub.course %}₹{{ sub.course.effective_price }}{% else %}—{% endif %}</dd>
+        <dt class="col-5">Payer name</dt><dd class="col-7">{{ sub.payer_name }}</dd>
+        <dt class="col-5">Payer UPI ID</dt><dd class="col-7">{{ sub.payer_upi_id|default:"—" }}</dd>
+        <dt class="col-5">Paid on</dt><dd class="col-7">{{ sub.paid_on|date:"d M Y" }}</dd>
+        <dt class="col-5">Submitted</dt><dd class="col-7">{{ sub.created_at|date:"d M Y H:i" }}</dd>
+        {% if sub.reviewed_at %}<dt class="col-5">Reviewed</dt><dd class="col-7">{{ sub.reviewed_at|date:"d M Y H:i" }} by {{ sub.reviewed_by }}<br>{{ sub.review_note }}</dd>{% endif %}
+      </dl>
+      <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Before approving, confirm in your bank / UPI merchant app that a credit with this UTR and amount was received. Approval activates the enrollment immediately.</div>
+    </div>
+    {% if sub.status == 'pending' %}
+    <form method="post" class="card card-body mt-3">{% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <button class="btn btn-primary" data-confirm="Submit this decision?">Submit decision</button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="col-lg-6">
+    <div class="card"><div class="card-header small fw-semibold">Payment screenshot</div>
+      <div class="card-body text-center">{% if sub.screenshot %}<a href="{% url 'portal:upi_screenshot' sub.pk %}" target="_blank"><img src="{% url 'portal:upi_screenshot' sub.pk %}" class="img-fluid rounded border" alt="UPI screenshot" style="max-height:600px"></a>{% else %}<span class="text-muted">No screenshot uploaded.</span>{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

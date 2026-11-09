@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content %}
+{% if preview and not enrollment %}<div class="preview-banner py-2 text-center small">Admin view — you can see all modules and lessons, including unpublished ones.</div>{% endif %}
+<div class="page-header py-4">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-2"><li class="breadcrumb-item"><a href="{% url 'portal:dashboard' %}">My learning</a></li><li class="breadcrumb-item active">{{ course.title }}</li></ol></nav>
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8"><h1 class="h3 fw-bold mb-2">{{ course.title }}</h1>
+        <div class="progress bg-secondary-subtle" style="max-width:420px"><div class="progress-bar" data-course-progress style="width:{{ progress.percent }}%"></div></div>
+        <div class="small text-white-50 mt-1" data-course-progress-label>{{ progress.percent }}% · {{ progress.completed }}/{{ progress.total }} lessons</div>
+      </div>
+      <div class="col-lg-4 text-lg-end">{% if continue_lesson %}<a href="{% url 'portal:lesson' course.slug continue_lesson.pk %}" class="btn btn-cyan btn-lg"><i class="bi bi-play-fill me-1"></i>{% if progress.completed %}Continue{% else %}Start{% endif %}: {{ continue_lesson.title|truncatechars:28 }}</a>{% elif progress.total %}<span class="badge text-bg-success fs-6"><i class="bi bi-trophy me-1"></i>All lessons completed</span>{% endif %}</div>
+    </div>
+  </div>
+</div>
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header fw-semibold">Course content</div>
+        {% if outline %}
+        <div class="accordion accordion-flush outline" id="outline">
+          {% for m in outline %}
+          <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#m{{ m.pk }}">{{ forloop.counter }}. {{ m.title }}{% if preview and m.status != 'published' %} {% status_badge m.status %}{% endif %}<span class="ms-auto me-3 small text-muted fw-normal">{{ m.visible_lessons|length }} lessons</span></button></h2>
+            <div id="m{{ m.pk }}" class="accordion-collapse collapse show">
+              <div class="accordion-body py-2">
+                {% for l in m.visible_lessons %}
+                <div class="lesson-row">
+                  <i class="bi {% if l.is_done %}bi-check-circle-fill text-success{% elif l.active_video %}bi-play-circle text-muted{% else %}bi-file-text text-muted{% endif %}"></i>
+                  <a href="{% url 'portal:lesson' course.slug l.pk %}">{{ l.title }}</a>
+                  {% if preview and l.status != 'published' %}{% status_badge l.status %}{% endif %}
+                  <span class="ms-auto small text-muted">{{ l.duration_minutes|minutes }}</span>
+                </div>
+                {% empty %}<div class="small text-muted py-2">Lessons coming soon.</div>{% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}<div class="card-body text-muted">Lessons will appear here as soon as they are published.</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-lg-4">
+      {% if course.syllabus_list %}
+      <div class="card card-body mb-4"><h6 class="fw-bold text-navy">Syllabus</h6><ol class="small mb-0">{% for s in course.syllabus_list %}<li>{{ s }}</li>{% endfor %}</ol></div>
+      {% endif %}
+      <div class="card">
+        <div class="card-header fw-semibold">Assignments</div>
+        <ul class="list-group list-group-flush">
+          {% for a in assignments %}<li class="list-group-item small"><a href="{% url 'portal:assignment_detail' a.pk %}">{{ a.title }}</a>{% if a.due_at %}<br><span class="text-muted">due {{ a.due_at|date:"d M Y" }}</span>{% endif %}</li>
+          {% empty %}<li class="list-group-item small text-muted">No assignments yet.</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

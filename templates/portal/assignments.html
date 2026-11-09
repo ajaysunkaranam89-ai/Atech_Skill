@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}Assignments{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 section-title mb-3">Assignments</h1>
+  <div class="card">
+    <div class="table-responsive"><table class="table table-manage table-hover mb-0">
+      <thead><tr><th>Assignment</th><th>Course</th><th>Due</th><th>My status</th><th>Marks</th><th></th></tr></thead>
+      <tbody>{% for a in items %}
+        <tr><td class="fw-medium">{{ a.title }}</td><td class="small">{{ a.course.title }}</td>
+          <td class="small">{{ a.due_at|date:"d M Y H:i"|default:"—" }}{% if a.is_overdue and not a.my_submission %} <span class="badge text-bg-danger">overdue</span>{% endif %}</td>
+          <td>{% if a.my_submission %}{% status_badge a.my_submission.status a.my_submission.get_status_display %}{% else %}<span class="badge text-bg-light">Not submitted</span>{% endif %}</td>
+          <td>{% if a.my_submission.marks is not None %}{{ a.my_submission.marks }}/{{ a.max_marks }}{% else %}—{% endif %}</td>
+          <td><a class="btn btn-sm btn-outline-primary" href="{% url 'portal:assignment_detail' a.pk %}">Open</a></td></tr>
+      {% empty %}<tr><td colspan="6" class="text-muted small p-4 text-center">No assignments yet.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

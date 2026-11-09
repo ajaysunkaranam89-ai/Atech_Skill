@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ academy.tagline }}{% endblock %}
+{% block messages %}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    {% include "partials/messages.html" %}
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <span class="hero-badge mb-3"><i class="bi bi-stars me-1"></i>{{ academy.tagline }}</span>
+        <h1 class="display-5 fw-bold mt-3">{{ academy.hero_title }}</h1>
+        <p class="lead mt-3">{{ academy.hero_subtitle }}</p>
+        <form class="d-flex gap-2 mt-4" action="{% url 'core:course_list' %}" role="search">
+          <input class="form-control form-control-lg" type="search" name="q" placeholder="Search courses, e.g. DevOps, Python, Cloud" aria-label="Search courses">
+          <button class="btn btn-cyan btn-lg px-4" type="submit">Search</button>
+        </form>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+          <a href="{% url 'core:course_list' %}" class="btn btn-outline-light">Browse all courses</a>
+          {% if not user.is_authenticated %}<a href="{% url 'accounts:signup' %}" class="btn btn-link text-white">Create a free account →</a>{% endif %}
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="row g-3">
+          <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan">{{ course_count }}</div><div class="small">Published courses</div></div></div>
+          <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-camera-video"></i></div><div class="small">Live Google Meet classes</div></div></div>
+          <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-collection-play"></i></div><div class="small">Recorded lessons to rewatch</div></div></div>
+          <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-award"></i></div><div class="small">Verifiable certificates</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container py-5">
+  {% if categories %}
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    {% for c in categories %}<a class="chip fs-6 px-3 py-2" href="{% url 'core:course_list' %}?category={{ c.slug }}"><i class="bi {{ c.icon|default:'bi-tag' }}"></i>{{ c.name }} <span class="text-muted">({{ c.n }})</span></a>{% endfor %}
+  </div>
+  {% endif %}
+  <div class="d-flex justify-content-between align-items-end mb-3">
+    <h2 class="section-title mb-0">Featured courses</h2>
+    <a href="{% url 'core:course_list' %}">View all →</a>
+  </div>
+  {% if featured %}
+  <div class="row g-4">
+    {% for course in featured %}<div class="col-sm-6 col-lg-4">{% include "partials/course_card.html" %}</div>{% endfor %}
+  </div>
+  {% else %}
+  <div class="card"><div class="empty-state"><i class="bi bi-hourglass-split"></i><h5 class="mt-3">New courses are on the way</h5><p>Our trainers are preparing the next batch. Check back soon.</p></div></div>
+  {% endif %}
+</section>
+
+<section class="bg-white border-top border-bottom py-5">
+  <div class="container">
+    <h2 class="section-title text-center mb-4">How learning works here</h2>
+    <div class="row g-4 text-center">
+      <div class="col-md-3"><i class="bi bi-person-check fs-1 text-cyan"></i><h6 class="mt-2">1. Enroll</h6><p class="small text-muted">Pay securely with Razorpay or UPI and get instant access once verified.</p></div>
+      <div class="col-md-3"><i class="bi bi-camera-video fs-1 text-cyan"></i><h6 class="mt-2">2. Attend live</h6><p class="small text-muted">Join scheduled Google Meet sessions with your batch and trainer.</p></div>
+      <div class="col-md-3"><i class="bi bi-play-btn fs-1 text-cyan"></i><h6 class="mt-2">3. Rewatch & practise</h6><p class="small text-muted">Recorded lessons, PDF notes and hands-on assignments.</p></div>
+      <div class="col-md-3"><i class="bi bi-award fs-1 text-cyan"></i><h6 class="mt-2">4. Get certified</h6><p class="small text-muted">Complete the course and receive a verifiable certificate.</p></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

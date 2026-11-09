@@ -1,0 +1,58 @@
+{% extends "base_html.html" %}
+{% block title %}{{ title|default:"Admin" }}{% endblock %}
+{% block body_class %}dash-body{% endblock %}
+{% block body %}
+<aside class="dash-sidebar" aria-label="Admin navigation">
+  <a class="brand" href="{% url 'dashboard:overview' %}"><span class="brand-mark">TS</span><span>Admin Console</span></a>
+  {% with s=section %}
+  <nav class="nav flex-column pb-4">
+    <div class="nav-section">Overview</div>
+    <a class="nav-link {% if s == 'overview' %}active{% endif %}" href="{% url 'dashboard:overview' %}"><i class="bi bi-speedometer2"></i>Dashboard overview</a>
+    <div class="nav-section">Content</div>
+    <a class="nav-link {% if s == 'courses' %}active{% endif %}" href="{% url 'dashboard:courses' %}"><i class="bi bi-journal-richtext"></i>Course management</a>
+    <a class="nav-link {% if s == 'modules' %}active{% endif %}" href="{% url 'dashboard:modules' %}"><i class="bi bi-diagram-3"></i>Module management</a>
+    <a class="nav-link {% if s == 'videos' %}active{% endif %}" href="{% url 'dashboard:videos' %}"><i class="bi bi-camera-reels"></i>Recorded videos</a>
+    <a class="nav-link {% if s == 'materials' %}active{% endif %}" href="{% url 'dashboard:resources' %}"><i class="bi bi-file-earmark-pdf"></i>PDF & study material</a>
+    <a class="nav-link {% if s == 'assignments' %}active{% endif %}" href="{% url 'dashboard:assignments' %}"><i class="bi bi-journal-check"></i>Assignments</a>
+    <div class="nav-section">Teaching</div>
+    <a class="nav-link {% if s == 'batches' %}active{% endif %}" href="{% url 'dashboard:batches' %}"><i class="bi bi-people"></i>Batch management</a>
+    <a class="nav-link {% if s == 'live' %}active{% endif %}" href="{% url 'dashboard:live' %}"><i class="bi bi-broadcast"></i>Live classes</a>
+    <a class="nav-link {% if s == 'notifications' %}active{% endif %}" href="{% url 'dashboard:announcements' %}"><i class="bi bi-megaphone"></i>Notifications</a>
+    {% if user.can_manage_all_content %}
+    <div class="nav-section">Students</div>
+    <a class="nav-link {% if s == 'students' %}active{% endif %}" href="{% url 'dashboard:students' %}"><i class="bi bi-person-lines-fill"></i>Student management</a>
+    <a class="nav-link {% if s == 'certificates' %}active{% endif %}" href="{% url 'dashboard:certificates' %}"><i class="bi bi-award"></i>Certificates</a>
+    {% endif %}
+    {% if user.is_super_admin %}
+    <a class="nav-link {% if s == 'enrollments' %}active{% endif %}" href="{% url 'dashboard:enrollments' %}"><i class="bi bi-person-check"></i>Enrollments</a>
+    <a class="nav-link {% if s == 'payments' %}active{% endif %}" href="{% url 'dashboard:payments' %}"><i class="bi bi-credit-card"></i>Payments</a>
+    <div class="nav-section">Business</div>
+    <a class="nav-link {% if s == 'reports' %}active{% endif %}" href="{% url 'dashboard:reports' %}"><i class="bi bi-graph-up-arrow"></i>Reports</a>
+    <a class="nav-link {% if s == 'admins' %}active{% endif %}" href="{% url 'dashboard:staff' %}"><i class="bi bi-shield-lock"></i>Administrators</a>
+    <a class="nav-link {% if s == 'settings' %}active{% endif %}" href="{% url 'dashboard:settings' %}"><i class="bi bi-gear"></i>Website settings</a>
+    <a class="nav-link {% if s == 'audit' %}active{% endif %}" href="{% url 'dashboard:audit' %}"><i class="bi bi-clipboard-data"></i>Audit log</a>
+    {% endif %}
+  </nav>
+  {% endwith %}
+</aside>
+<div class="dash-main">
+  <header class="dash-topbar d-flex align-items-center gap-3">
+    <button class="btn btn-sm btn-outline-secondary d-lg-none" data-toggle-sidebar aria-label="Menu"><i class="bi bi-list"></i></button>
+    <div class="fw-semibold text-navy text-truncate">{% block page_title %}{{ title }}{% endblock %}</div>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <a href="{% url 'core:home' %}" target="_blank" class="small"><i class="bi bi-box-arrow-up-right me-1"></i>View website</a>
+      <div class="dropdown">
+        <a class="dropdown-toggle small text-dark" href="#" data-bs-toggle="dropdown">{{ user.display_name }} <span class="badge text-bg-light">{{ user.get_role_display }}</span></a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">Change password</a></li>
+          <li><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item">Log out</button></form></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+  <div class="dash-content">
+    {% include "partials/messages.html" with dashboard=1 %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <i class="bi bi-compass text-cyan" style="font-size:4rem"></i>
+  <h1 class="h3 mt-3">Page not found</h1>
+  <p class="text-muted">The page you're looking for doesn't exist or is no longer available.</p>
+  <a href="{% url 'core:course_list' %}" class="btn btn-primary">Browse courses</a>
+</div>
+{% endblock %}

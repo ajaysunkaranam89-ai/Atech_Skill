@@ -1,0 +1,57 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0 me-auto text-navy">{{ title }} <span class="badge text-bg-light fs-6 fw-normal">{{ total }}</span></h1>
+  {% for label, url, icon in extra_buttons %}<a href="{{ url }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-{{ icon }} me-1"></i>{{ label }}</a>{% endfor %}
+  {% if create_url %}<a href="{{ create_url }}" class="btn btn-cyan btn-sm"><i class="bi bi-plus-lg me-1"></i>{{ create_label }}</a>{% endif %}
+</div>
+{% if summary %}<div class="alert alert-info py-2 small">Paid in current filter: <strong>{{ summary.n }}</strong> payments totalling <strong>₹{{ summary.total|default:0 }}</strong></div>{% endif %}
+
+<form class="card card-body py-2 mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    {% if has_search %}<div class="col-md-4"><label class="form-label small mb-1">Search</label><input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search…"></div>{% endif %}
+    {% for param, label, choices, current in filters %}{% if choices %}
+    <div class="col-md-2"><label class="form-label small mb-1">{{ label }}</label>
+      <select name="{{ param }}" class="form-select form-select-sm" onchange="this.form.submit()"><option value="">All</option>
+        {% for v, l in choices %}<option value="{{ v }}" {% if current == v|stringformat:"s" %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select></div>
+    {% elif current %}<input type="hidden" name="{{ param }}" value="{{ current }}"><div class="col-auto"><span class="badge text-bg-secondary">{{ label }} = {{ current }}</span></div>{% endif %}{% endfor %}
+    {% if sort_options %}
+    <div class="col-md-2"><label class="form-label small mb-1">Sort by</label>
+      <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+        {% for k, l in sort_options %}<option value="{{ k }}" {% if current_sort == k %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select></div>
+    {% endif %}
+    <div class="col-auto"><button class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Apply</button> <a href="?" class="btn btn-sm btn-link">Reset</a></div>
+  </div>
+</form>
+
+<div class="card">
+  {% if rows %}
+  <div class="table-responsive">
+    <table class="table table-hover table-manage">
+      <thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}<th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for obj, cells, actions in rows %}
+        <tr>
+          {% for c in cells %}<td>{{ c }}</td>{% endfor %}
+          <td class="text-end text-nowrap">
+            {% for a in actions %}
+              {% if a.post %}
+                <form method="post" action="{{ a.url }}" class="d-inline" data-confirm="{{ a.label }}: are you sure?">{% csrf_token %}{% for k, v in a.post.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-sm {% if a.danger %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" title="{{ a.label }}"><i class="bi bi-{{ a.icon }}"></i><span class="d-none d-xl-inline ms-1">{{ a.label }}</span></button></form>
+              {% else %}
+                <a href="{{ a.url }}" class="btn btn-sm {% if a.danger %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" title="{{ a.label }}"><i class="bi bi-{{ a.icon }}"></i><span class="d-none d-xl-inline ms-1">{{ a.label }}</span></a>
+              {% endif %}
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-inbox"></i><p class="mt-2 mb-3">Nothing here yet{% if q %} for “{{ q }}”{% endif %}.</p>{% if create_url %}<a href="{{ create_url }}" class="btn btn-cyan btn-sm"><i class="bi bi-plus-lg me-1"></i>{{ create_label }}</a>{% endif %}</div>
+  {% endif %}
+</div>
+{% include "partials/pagination.html" with p=page_obj %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "accounts/_auth_layout.html" %}
+{% block title %}Create account{% endblock %}
+{% block heading %}Create your student account{% endblock %}
+{% block form %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  <div class="row">
+    <div class="col-sm-6">{% include "partials/field.html" with field=form.first_name %}</div>
+    <div class="col-sm-6">{% include "partials/field.html" with field=form.last_name %}</div>
+  </div>
+  {% include "partials/field.html" with field=form.email %}
+  {% include "partials/field.html" with field=form.phone %}
+  {% include "partials/field.html" with field=form.password1 %}
+  {% include "partials/field.html" with field=form.password2 %}
+  <button class="btn btn-cyan w-100 btn-lg" type="submit">Create account</button>
+  <p class="small text-center mt-3 mb-0">Already have an account? <a href="{% url 'accounts:login' %}">Log in</a></p>
+</form>
+{% endblock %}

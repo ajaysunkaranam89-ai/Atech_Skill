@@ -1,0 +1,39 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Batch {{ batch.code }}{% endblock %}
+{% block page_title %}Batch management{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <div class="me-auto"><h1 class="h4 mb-0 text-navy">{{ batch.code }} — {{ batch.name }}</h1>
+    <div class="small text-muted">{{ batch.course.title }} · {{ batch.start_date|date:"d M Y" }}{% if batch.end_date %} – {{ batch.end_date|date:"d M Y" }}{% endif %} · {{ batch.schedule }} · {% status_badge batch.status batch.get_status_display %}</div></div>
+  {% if user.can_manage_all_content %}<a href="{% url 'dashboard:batch_edit' batch.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>{% endif %}
+  <a href="{% url 'dashboard:live_add' %}?batch={{ batch.pk }}" class="btn btn-sm btn-cyan"><i class="bi bi-broadcast me-1"></i>Schedule class</a>
+</div>
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-header fw-semibold">Students ({{ members|length }}/{{ batch.capacity }})</div>
+      <ul class="list-group list-group-flush">
+        {% for m in members %}
+        <li class="list-group-item d-flex align-items-center"><span class="me-auto">{{ m.student.get_full_name|default:m.student.email }} <span class="small text-muted">{{ m.student.email }}</span></span>
+          {% if user.can_manage_all_content %}<form method="post" action="{% url 'dashboard:batch_remove_student' batch.pk m.student_id %}" data-confirm="Remove this student from the batch? Their enrollment remains.">{% csrf_token %}<button class="btn btn-sm btn-outline-danger"><i class="bi bi-person-dash"></i></button></form>{% endif %}
+        </li>
+        {% empty %}<li class="list-group-item text-muted small">No students in this batch.</li>{% endfor %}
+      </ul>
+      {% if user.can_manage_all_content %}
+      <div class="card-footer">
+        <form method="post" class="d-flex gap-2">{% csrf_token %}{{ form.student }}<button class="btn btn-sm btn-primary text-nowrap">Add student</button></form>
+        <div class="form-text">Only students with an active enrollment in this course are listed.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header fw-semibold">Live classes</div>
+      <ul class="list-group list-group-flush">
+        {% for c in classes %}<li class="list-group-item small"><a href="{% url 'dashboard:live_edit' c.pk %}">{{ c.title }}</a><br><span class="text-muted">{{ c.start_at|date:"D d M Y, h:i A" }}</span> {% status_badge c.status c.get_status_display %}</li>
+        {% empty %}<li class="list-group-item small text-muted">No classes scheduled.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

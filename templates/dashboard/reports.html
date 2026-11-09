@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+  <h1 class="h4 text-navy mb-0 me-auto">Business reports</h1>
+  <a class="btn btn-sm btn-outline-secondary" href="?export=payments"><i class="bi bi-download me-1"></i>Payments CSV</a>
+  <a class="btn btn-sm btn-outline-secondary" href="?export=enrollments"><i class="bi bi-download me-1"></i>Enrollments CSV</a>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="kpi"><div class="small text-muted">Total revenue</div><div class="kpi-value">₹{{ totals.total|default:0|floatformat:0 }}</div></div></div>
+  <div class="col-md-3"><div class="kpi"><div class="small text-muted">Paid transactions</div><div class="kpi-value">{{ totals.n }}</div></div></div>
+  <div class="col-md-3"><div class="kpi"><div class="small text-muted">Average ticket</div><div class="kpi-value">₹{{ totals.avg|default:0|floatformat:0 }}</div></div></div>
+  <div class="col-md-3"><div class="kpi"><div class="small text-muted">Registered students</div><div class="kpi-value">{{ students }}</div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card h-100"><div class="card-header fw-semibold">Revenue by month (last 12 months)</div>
+      <div class="card-body">
+        {% for r in revenue_by_month %}
+        <div class="d-flex align-items-center gap-2 mb-2 small">
+          <span style="width:70px">{{ r.m|date:"M Y" }}</span>
+          <div class="flex-grow-1 bg-light rounded" style="height:18px"><div class="rounded" style="height:18px;background:linear-gradient(90deg,#00b4d8,#0b1f3a);width:{% widthratio r.total max_rev 100 %}%"></div></div>
+          <span style="width:90px" class="text-end">₹{{ r.total|floatformat:0 }}</span>
+        </div>
+        {% empty %}<p class="text-muted small mb-0">No paid transactions yet.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card h-100"><div class="card-header fw-semibold">Courses</div>
+      <div class="table-responsive"><table class="table table-manage">
+        <thead><tr><th>Course</th><th>Status</th><th>Active</th><th>Completed</th><th>Revenue</th></tr></thead>
+        <tbody>{% for c in courses %}<tr><td>{{ c.title }}</td><td>{% status_badge c.status c.get_status_display %}</td><td>{{ c.active }}</td><td>{{ c.completed }}</td><td>₹{{ c.revenue|default:0|floatformat:0 }}</td></tr>{% empty %}<tr><td colspan="5" class="text-muted small">No courses.</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card"><div class="card-header fw-semibold">Most completed lessons</div>
+      <ul class="list-group list-group-flush">{% for t in top_lessons %}<li class="list-group-item small d-flex"><span class="me-auto">{{ t.lesson__title }} <span class="text-muted">— {{ t.lesson__module__course__title }}</span></span><span class="badge text-bg-info">{{ t.n }}</span></li>{% empty %}<li class="list-group-item small text-muted">No completions yet.</li>{% endfor %}</ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

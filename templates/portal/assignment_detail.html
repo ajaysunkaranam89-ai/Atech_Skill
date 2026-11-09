@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}{{ a.title }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:900px">
+  <a href="{% url 'portal:assignments' %}" class="small">← Assignments</a>
+  <h1 class="h3 section-title mt-2">{{ a.title }}</h1>
+  <p class="small text-muted">{{ a.course.title }} · max {{ a.max_marks }} marks{% if a.due_at %} · due {{ a.due_at|date:"d M Y, h:i A" }}{% endif %}</p>
+  <div class="card card-body mb-4">
+    <h6 class="fw-bold">Instructions</h6>
+    {{ a.instructions|linebreaks }}
+    {% if a.attachment %}<a href="{% url 'portal:assignment_brief' a.pk %}" class="btn btn-sm btn-outline-primary align-self-start"><i class="bi bi-download me-1"></i>Download brief</a>{% endif %}
+  </div>
+  {% if sub %}
+  <div class="card card-body mb-4">
+    <div class="d-flex align-items-center"><h6 class="fw-bold mb-0 me-auto">My submission</h6>{% status_badge sub.status sub.get_status_display %}</div>
+    <p class="small text-muted mb-2">Submitted {{ sub.submitted_at|date:"d M Y H:i" }}</p>
+    {% if sub.file %}<p class="mb-1"><a href="{% url 'portal:submission_file' sub.pk %}"><i class="bi bi-paperclip"></i> My file</a></p>{% endif %}
+    {% if sub.marks is not None %}<p class="mb-1"><strong>Marks:</strong> {{ sub.marks }}/{{ a.max_marks }}</p>{% endif %}
+    {% if sub.feedback %}<div class="alert alert-info small mb-0"><strong>Trainer feedback:</strong><br>{{ sub.feedback|linebreaksbr }}</div>{% endif %}
+  </div>
+  {% endif %}
+  {% if not locked %}
+  <form method="post" enctype="multipart/form-data" class="card card-body">{% csrf_token %}
+    <h6 class="fw-bold">{% if sub %}Update submission{% else %}Submit your work{% endif %}</h6>
+    {% include "partials/form_errors.html" %}
+    {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+    <button class="btn btn-primary">Submit</button>
+  </form>
+  {% else %}<div class="alert alert-success">This submission has been graded and is closed.</div>{% endif %}
+</div>
+{% endblock %}

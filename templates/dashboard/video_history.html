@@ -1,0 +1,44 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Video versions: {{ lesson.title }}{% endblock %}
+{% block page_title %}Recorded video management{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <div class="me-auto">
+    <h1 class="h4 mb-0 text-navy">{{ lesson.title }}</h1>
+    <div class="small text-muted"><a href="{% url 'dashboard:course_builder' lesson.module.course_id %}">{{ lesson.module.course.title }}</a> › {{ lesson.module.title }} · lesson {% status_badge lesson.status lesson.get_status_display %}</div>
+  </div>
+  <a href="{% url 'dashboard:lesson_preview' lesson.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-play-circle me-1"></i>Preview</a>
+  <a href="{% url 'dashboard:lesson_edit' lesson.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit lesson</a>
+  <a href="{% url 'dashboard:video_replace' lesson.pk %}" class="btn btn-sm btn-cyan"><i class="bi bi-arrow-repeat me-1"></i>{% if lesson.active_video %}Replace video{% else %}Add video{% endif %}</a>
+</div>
+<div class="card">
+  <div class="card-header fw-semibold">Version history</div>
+  {% if versions %}
+  <div class="table-responsive"><table class="table table-manage table-hover">
+    <thead><tr><th>Version</th><th>Title</th><th>Source</th><th>Duration</th><th>Status</th><th>Uploaded</th><th>Note</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    {% for v in versions %}
+      <tr class="{% if v.is_active %}table-info{% endif %}">
+        <td><strong>v{{ v.version }}</strong>{% if v.is_active %} <span class="badge text-bg-primary">Active</span>{% endif %}</td>
+        <td>{% if v.thumbnail %}<img src="{{ v.thumbnail.url }}" class="thumb-sm me-2" alt="">{% endif %}{{ v.title }}</td>
+        <td class="small">{{ v.get_source_type_display }}{% if v.video_url %}<br><span class="text-muted text-break">{{ v.video_url|truncatechars:50 }}</span>{% endif %}{% if v.is_file and not v.video_file %}<br><span class="text-danger">file removed</span>{% endif %}</td>
+        <td>{{ v.duration_display|default:"—" }}</td>
+        <td>{% status_badge v.status v.get_status_display %}</td>
+        <td class="small">{{ v.created_at|date:"d M Y H:i" }}<br><span class="text-muted">{{ v.uploaded_by|default:"" }}</span>{% if v.replaced_at %}<br><span class="text-muted">replaced {{ v.replaced_at|date:"d M Y H:i" }}</span>{% endif %}</td>
+        <td class="small">{{ v.change_note }}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard:lesson_preview' lesson.pk %}?version={{ v.version }}" title="Preview this version"><i class="bi bi-play-circle"></i></a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard:video_version_edit' v.pk %}" title="Edit metadata"><i class="bi bi-pencil"></i></a>
+          {% if not v.is_active %}
+          <form method="post" action="{% url 'dashboard:video_activate' v.pk %}" class="d-inline" data-confirm="Make version {{ v.version }} the active video? Students will see it immediately.">{% csrf_token %}<button class="btn btn-sm btn-outline-primary" title="Restore this version"><i class="bi bi-arrow-counterclockwise"></i></button></form>
+          <a class="btn btn-sm btn-outline-danger" href="{% url 'dashboard:video_version_delete' v.pk %}" title="Delete version"><i class="bi bi-trash"></i></a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty-state"><i class="bi bi-camera-video-off"></i><p class="mt-2">No video has been added to this lesson yet.</p></div>{% endif %}
+</div>
+{% endblock %}

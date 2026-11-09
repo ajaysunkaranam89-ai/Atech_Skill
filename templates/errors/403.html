@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Access denied{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <i class="bi bi-shield-lock text-cyan" style="font-size:4rem"></i>
+  <h1 class="h3 mt-3">You don't have access to this page</h1>
+  <p class="text-muted">If you believe you should, make sure you're logged in with the right account or contact the academy.</p>
+  <a href="{% url 'core:home' %}" class="btn btn-primary">Go to home</a>
+</div>
+{% endblock %}

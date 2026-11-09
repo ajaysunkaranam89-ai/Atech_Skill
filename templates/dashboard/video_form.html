@@ -1,0 +1,79 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h4 mb-0 text-navy">{{ title }}</h1>
+  <a href="{{ cancel_url|default:'/dashboard/videos/' }}" class="btn btn-sm btn-link ms-auto">← Back</a>
+</div>
+<div class="row g-4">
+  <div class="col-xl-8">
+    <form method="post" enctype="multipart/form-data" novalidate data-upload-progress>
+      {% csrf_token %}
+      {% include "partials/form_errors.html" %}
+      {% if lesson %}
+        <div class="form-section">
+          <h6><i class="bi bi-camera-reels me-1"></i>New video version for “{{ lesson.title }}”</h6>
+          <p class="small text-muted">{{ lesson.module.course.title }} › {{ lesson.module.title }}. The previous version is kept in history; students see the new active version immediately on their next page load.</p>
+          {% include "partials/field.html" with field=form.title %}
+          {% include "partials/field.html" with field=form.source_type %}
+          <div id="source-hint" class="form-text mt-n2 mb-3"></div>
+          {% include "partials/field.html" with field=form.video_url %}
+          {% include "partials/field.html" with field=form.video_file %}
+          <div class="row"><div class="col-md-6">{% include "partials/field.html" with field=form.thumbnail %}</div><div class="col-md-6">{% include "partials/field.html" with field=form.duration_seconds %}</div></div>
+          <div class="row"><div class="col-md-6">{% include "partials/field.html" with field=form.status %}</div><div class="col-md-6">{% include "partials/field.html" with field=form.change_note %}</div></div>
+          {% include "partials/field.html" with field=form.delete_old_file %}
+        </div>
+      {% else %}
+        <div class="form-section">
+          <h6>1. Where does this lesson go?</h6>
+          <div class="row"><div class="col-md-6">{% include "partials/field.html" with field=form.course %}</div><div class="col-md-6">{% include "partials/field.html" with field=form.module %}</div></div>
+          {% include "partials/field.html" with field=form.title %}
+          {% include "partials/field.html" with field=form.description %}
+        </div>
+        <div class="form-section">
+          <h6>2. Recorded video</h6>
+          {% include "partials/field.html" with field=form.source_type %}
+          <div id="source-hint" class="form-text mt-n2 mb-3"></div>
+          {% include "partials/field.html" with field=form.video_url %}
+          {% include "partials/field.html" with field=form.video_file %}
+          <div class="row">
+            <div class="col-md-4">{% include "partials/field.html" with field=form.thumbnail %}</div>
+            <div class="col-md-4">{% include "partials/field.html" with field=form.duration_minutes %}</div>
+            <div class="col-md-4">{% include "partials/field.html" with field=form.duration_seconds %}</div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h6>3. Notes & options</h6>
+          {% include "partials/field.html" with field=form.pdf_notes %}
+          <div class="row"><div class="col-md-4">{% include "partials/field.html" with field=form.order %}</div><div class="col-md-4">{% include "partials/field.html" with field=form.publish %}</div><div class="col-md-4 pt-md-4">{% include "partials/field.html" with field=form.is_free_preview %}</div></div>
+        </div>
+      {% endif %}
+      <div class="form-section">
+        <h6><i class="bi bi-bell me-1"></i>Student notification</h6>
+        <div class="row"><div class="col-md-6">{% include "partials/field.html" with field=form.notify %}</div><div class="col-md-6 pt-md-4">{% include "partials/field.html" with field=form.notify_email %}</div></div>
+        {% include "partials/field.html" with field=form.notify_batches %}
+        <p class="small text-muted mb-0">Notifications are sent only for published lessons in published courses, and never twice for the same change.</p>
+      </div>
+      <div class="upload-progress form-section">
+        <div class="small upload-label mb-1">Uploading…</div>
+        <div class="progress" style="height:1.2rem"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%">0%</div></div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-cloud-arrow-up me-1"></i>Save</button>
+        <a href="{{ cancel_url|default:'/dashboard/videos/' }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+  <div class="col-xl-4">
+    {% if current %}
+    <div class="card mb-3"><div class="card-header small fw-semibold">Current active video (v{{ current.version }})</div>
+      <div class="card-body">{% include "partials/video_player.html" with video=current %}<div class="small text-muted mt-2">{{ current.get_source_type_display }} · {{ current.get_status_display }}</div></div></div>
+    {% endif %}
+    <div class="card card-body small">
+      <h6><i class="bi bi-shield-exclamation text-warning me-1"></i>About video protection</h6>
+      <p><strong>YouTube unlisted</strong> links are <em>not</em> access control — anyone who obtains the link can watch the video. Use them for convenience only.</p>
+      <p><strong>Uploaded MP4s</strong> are stored in private storage and streamed only after the server checks that the viewer is enrolled (or is an administrator).</p>
+      <p class="mb-0">For high-value paid content in production, use a protected video service with signed, expiring URLs and DRM (e.g. Bunny Stream, Mux, Vimeo OTT, Cloudflare Stream, VdoCipher) via the <em>External HTTPS URL</em> option.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

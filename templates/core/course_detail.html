@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block meta_description %}{{ course.short_description }}{% endblock %}
+{% block content %}
+{% if preview %}<div class="preview-banner py-2 text-center small"><i class="bi bi-eye me-1"></i>Admin preview — this course is <strong>{{ course.get_status_display }}</strong> and not visible to the public.</div>{% endif %}
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-2"><li class="breadcrumb-item"><a href="{% url 'core:course_list' %}">Courses</a></li>{% if course.category %}<li class="breadcrumb-item"><a href="{% url 'core:course_list' %}?category={{ course.category.slug }}">{{ course.category.name }}</a></li>{% endif %}<li class="breadcrumb-item active">{{ course.title }}</li></ol></nav>
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <h1 class="fw-bold">{{ course.title }}</h1>
+        <p class="lead text-white-50">{{ course.short_description }}</p>
+        <div class="d-flex flex-wrap gap-3 small">
+          <span><i class="bi bi-bar-chart me-1 text-cyan"></i>{{ course.get_level_display }}</span>
+          <span><i class="bi bi-broadcast me-1 text-cyan"></i>{{ course.get_mode_display }}</span>
+          {% if course.duration_text %}<span><i class="bi bi-clock me-1 text-cyan"></i>{{ course.duration_text }}</span>{% endif %}
+          <span><i class="bi bi-collection-play me-1 text-cyan"></i>{{ lesson_count }} lesson{{ lesson_count|pluralize }}</span>
+          <span><i class="bi bi-translate me-1 text-cyan"></i>{{ course.language }}</span>
+          {% if course.certificate_enabled %}<span><i class="bi bi-award me-1 text-cyan"></i>Certificate</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-lg-8 order-2 order-lg-1">
+      {% if course.objectives_list %}
+      <div class="card card-body mb-4">
+        <h4 class="section-title h5">What you'll learn</h4>
+        <ul class="check-list row mb-0 ps-0">{% for o in course.objectives_list %}<li class="col-md-6">{{ o }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+
+      <div class="card card-body mb-4">
+        <h4 class="section-title h5">About this course</h4>
+        <div>{{ course.description|linebreaks }}</div>
+      </div>
+
+      {% if course.syllabus_list %}
+      <div class="card card-body mb-4">
+        <h4 class="section-title h5">Syllabus</h4>
+        <ol class="mb-0">{% for s in course.syllabus_list %}<li class="mb-1">{{ s }}</li>{% endfor %}</ol>
+      </div>
+      {% endif %}
+
+      <div class="card mb-4">
+        <div class="card-body pb-0"><h4 class="section-title h5">Course content</h4></div>
+        {% if outline %}
+        <div class="accordion accordion-flush outline" id="outline">
+          {% for m in outline %}
+          <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#m{{ m.pk }}">
+              {{ m.title }} <span class="ms-auto me-3 small text-muted fw-normal">{{ m.visible_lessons|length }} lessons</span></button></h2>
+            <div id="m{{ m.pk }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#outline">
+              <div class="accordion-body py-2">
+                {% if m.description %}<p class="small text-muted">{{ m.description }}</p>{% endif %}
+                {% for l in m.visible_lessons %}
+                <div class="lesson-row">
+                  <i class="bi {% if l.active_video %}bi-play-circle{% else %}bi-file-text{% endif %} text-muted"></i>
+                  {% if enrollment or l.is_free_preview or preview %}<a href="{% url 'portal:lesson' course.slug l.pk %}">{{ l.title }}</a>{% else %}<span>{{ l.title }}</span>{% endif %}
+                  {% if l.is_free_preview %}<span class="badge text-bg-info">Free preview</span>{% endif %}
+                  {% if preview and l.status != 'published' %}{% status_badge l.status %}{% endif %}
+                  <span class="ms-auto small text-muted">{{ l.duration_minutes|minutes }}</span>
+                </div>
+                {% empty %}<div class="small text-muted py-2">Lessons coming soon.</div>{% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}<div class="card-body text-muted">The detailed curriculum will be published soon.</div>{% endif %}
+      </div>
+
+      {% if course.prerequisites_list %}
+      <div class="card card-body mb-4"><h4 class="section-title h5">Prerequisites</h4><ul class="mb-0">{% for p in course.prerequisites_list %}<li>{{ p }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      {% if course.audience_list %}
+      <div class="card card-body mb-4"><h4 class="section-title h5">Who this course is for</h4><ul class="mb-0">{% for p in course.audience_list %}<li>{{ p }}</li>{% endfor %}</ul></div>
+      {% endif %}
+
+      {% if trainers %}
+      <div class="card card-body mb-4">
+        <h4 class="section-title h5">Your trainer{{ trainers|length|pluralize }}</h4>
+        {% for t in trainers %}
+        <div class="d-flex gap-3 {% if not forloop.last %}mb-3 pb-3 border-bottom{% endif %}">
+          {% if t.photo %}<img src="{{ t.photo.url }}" alt="" width="72" height="72" class="rounded-circle object-fit-cover">{% else %}<div class="brand-mark" style="width:72px;height:72px;font-size:1.4rem">{{ t.user|initials }}</div>{% endif %}
+          <div><h6 class="mb-0">{{ t.user.get_full_name }}</h6><div class="small text-muted mb-1">{{ t.designation }}{% if t.experience_years %} · {{ t.experience_years }}+ yrs{% endif %}</div><p class="small mb-0">{{ t.bio|linebreaksbr }}</p></div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-4 order-1 order-lg-2">
+      <div class="card shadow-sm sticky-lg-top" style="top:90px">
+        {% if course.promo_embed_url %}
+          <div class="ratio ratio-16x9"><iframe src="{{ course.promo_embed_url }}" title="Course preview" allowfullscreen class="rounded-top"></iframe></div>
+        {% elif course.thumbnail %}<img src="{{ course.thumbnail.url }}" class="course-thumb rounded-top" alt="">{% endif %}
+        <div class="card-body">
+          {% if enrollment %}
+            <div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i>You are enrolled</div>
+            <div class="progress mb-1"><div class="progress-bar" style="width: {{ progress.percent }}%"></div></div>
+            <div class="small text-muted mb-3">{{ progress.percent }}% complete</div>
+            <a href="{% url 'portal:course_home' course.slug %}" class="btn btn-cyan w-100 btn-lg">Continue learning</a>
+          {% else %}
+            <div class="d-flex align-items-baseline gap-2 mb-1">
+              <span class="price fs-2">{{ course.effective_price|inr }}</span>
+              {% if course.discounted_price is not None %}<span class="price-old">{{ course.price|inr }}</span><span class="badge text-bg-danger">{{ course.discount_percent }}% off</span>{% endif %}
+            </div>
+            <p class="small text-muted">{% if course.access_days %}{{ course.access_days }} days of access{% else %}Lifetime access to recordings{% endif %}</p>
+            {% if course.status == 'published' %}
+            <a href="{% url 'enrollments:checkout' course.slug %}" class="btn btn-cyan w-100 btn-lg">{% if course.is_free %}Enroll for free{% else %}Enroll now{% endif %}</a>
+            {% else %}
+            <button class="btn btn-secondary w-100" disabled>Not open for enrollment</button>
+            {% endif %}
+          {% endif %}
+          {% if batches %}
+          <hr><h6 class="small fw-bold text-uppercase text-muted">Upcoming batches</h6>
+          {% for b in batches %}
+          <div class="small mb-2"><i class="bi bi-calendar-event me-1 text-cyan"></i><strong>{{ b.name }}</strong> — starts {{ b.start_date|date:"d M Y" }}{% if b.schedule %}<br><span class="text-muted ms-3">{{ b.schedule }}</span>{% endif %}</div>
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

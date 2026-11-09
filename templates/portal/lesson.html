@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}{{ lesson.title }} · {{ course.title }}{% endblock %}
+{% block content %}
+{% if access.preview_mode %}<div class="preview-banner py-2 text-center small"><i class="bi bi-eye me-1"></i>Admin preview — this lesson is not visible to students ({{ lesson.get_status_display }}{% if lesson.module.status != 'published' %}, module {{ lesson.module.get_status_display|lower }}{% endif %}{% if course.status != 'published' %}, course {{ course.get_status_display|lower }}{% endif %}).</div>{% endif %}
+<div class="container-fluid px-lg-4 py-3">
+  <div class="row g-4">
+    <div class="col-lg-8 col-xl-9">
+      <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-2">
+        <li class="breadcrumb-item"><a href="{% if enrolled or is_manager %}{% url 'portal:course_home' course.slug %}{% else %}{{ course.get_absolute_url }}{% endif %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item">{{ lesson.module.title }}</li></ol></nav>
+      {% include "partials/video_player.html" %}
+      <div class="d-flex flex-wrap align-items-start gap-2 mt-3">
+        <div class="me-auto">
+          <h1 class="h4 mb-1 text-navy">{{ lesson.title }}</h1>
+          <div class="small text-muted">{% if lesson.duration_minutes %}{{ lesson.duration_minutes|minutes }} · {% endif %}Updated {{ lesson.content_updated_at|date:"d M Y" }}{% if video %} · video v{{ video.version }}{% endif %}</div>
+        </div>
+        {% if progress %}
+        <form method="post" action="{% url 'portal:lesson_complete' lesson.pk %}" data-complete-form data-lesson="{{ lesson.pk }}">{% csrf_token %}
+          <input type="hidden" name="completed" value="{% if progress.completed %}0{% else %}1{% endif %}">
+          {% if progress.completed %}<button class="btn btn-success"><i class="bi bi-check-circle-fill me-1"></i>Completed</button>
+          {% else %}<button class="btn btn-outline-success"><i class="bi bi-check-circle me-1"></i>Mark as completed</button>{% endif %}
+        </form>
+        {% endif %}
+      </div>
+      <div class="d-flex justify-content-between my-3">
+        {% if prev_lesson %}<a class="btn btn-outline-primary btn-sm" href="{% url 'portal:lesson' course.slug prev_lesson.pk %}"><i class="bi bi-chevron-left"></i> {{ prev_lesson.title|truncatechars:32 }}</a>{% else %}<span></span>{% endif %}
+        {% if next_lesson %}<a class="btn btn-primary btn-sm" href="{% url 'portal:lesson' course.slug next_lesson.pk %}">{{ next_lesson.title|truncatechars:32 }} <i class="bi bi-chevron-right"></i></a>{% endif %}
+      </div>
+      {% if not enrolled and not is_manager %}<div class="alert alert-info small"><i class="bi bi-unlock me-1"></i>This is a free preview lesson. <a href="{{ course.get_absolute_url }}">Enroll</a> to unlock all lessons.</div>{% endif %}
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-desc" type="button">Overview</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-res" type="button">Notes & resources <span class="badge text-bg-light">{{ resources|length }}</span></button></li>
+        {% if assignments %}<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-asg" type="button">Assignment</button></li>{% endif %}
+      </ul>
+      <div class="tab-content card card-body border-top-0 rounded-top-0">
+        <div class="tab-pane fade show active" id="t-desc">{% if lesson.description %}{{ lesson.description|linebreaks }}{% else %}<p class="text-muted mb-0">No description.</p>{% endif %}</div>
+        <div class="tab-pane fade" id="t-res">
+          {% for r in resources %}
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+            <i class="bi {% if r.resource_type == 'pdf' %}bi-file-earmark-pdf text-danger{% elif r.resource_type == 'link' %}bi-link-45deg{% else %}bi-file-earmark-arrow-down{% endif %} fs-5"></i>
+            <div class="me-auto"><div class="fw-medium">{{ r.title }}{% if not r.is_published %} <span class="badge text-bg-secondary">hidden</span>{% endif %}</div>{% if r.description %}<div class="small text-muted">{{ r.description }}</div>{% endif %}</div>
+            {% if r.resource_type == 'link' %}<a class="btn btn-sm btn-outline-primary" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">Open</a>
+            {% elif r.is_downloadable or is_manager %}<a class="btn btn-sm btn-outline-secondary" href="{{ r.download_url }}?inline=1" target="_blank">View</a> <a class="btn btn-sm btn-outline-primary" href="{{ r.download_url }}"><i class="bi bi-download"></i></a>
+            {% else %}<span class="small text-muted">view only in class</span>{% endif %}
+          </div>
+          {% empty %}<p class="text-muted mb-0">No notes for this lesson.</p>{% endfor %}
+        </div>
+        {% if assignments %}<div class="tab-pane fade" id="t-asg">{% for a in assignments %}<p><a href="{% url 'portal:assignment_detail' a.pk %}" class="fw-medium">{{ a.title }}</a>{% if a.due_at %} — due {{ a.due_at|date:"d M Y H:i" }}{% endif %}</p>{% endfor %}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-lg-4 col-xl-3">
+      <div class="card learn-sidebar">
+        <div class="card-body pb-2">
+          <h2 class="h6 fw-bold text-navy mb-2">{{ course.title }}</h2>
+          {% if course_progress and course_progress.total %}
+          <div class="progress mb-1"><div class="progress-bar" data-course-progress style="width:{{ course_progress.percent }}%"></div></div>
+          <div class="small text-muted mb-2" data-course-progress-label>{{ course_progress.percent }}% · {{ course_progress.completed }}/{{ course_progress.total }} lessons</div>
+          {% endif %}
+        </div>
+        <div class="px-2 pb-3">
+          {% for m in outline %}
+          <div class="small fw-bold text-uppercase text-muted px-2 mt-2 mb-1">{{ m.title }}</div>
+          {% for l in m.visible_lessons %}
+            {% if enrolled or is_manager or l.is_free_preview %}
+            <a class="lesson-link {% if l.pk == lesson.pk %}active{% endif %}" href="{% url 'portal:lesson' course.slug l.pk %}">
+              <i class="{% if l.is_done %}bi bi-check-circle-fill text-success{% else %}bi bi-play-circle text-muted{% endif %}" data-lesson-icon="{{ l.pk }}"></i>
+              <span class="me-auto">{{ l.title }}</span><span class="small text-muted">{{ l.duration_minutes|minutes }}</span>
+            </a>
+            {% else %}
+            <span class="lesson-link text-muted"><i class="bi bi-lock"></i><span>{{ l.title }}</span></span>
+            {% endif %}
+          {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

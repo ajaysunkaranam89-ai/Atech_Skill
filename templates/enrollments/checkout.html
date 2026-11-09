@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}Enroll: {{ course.title }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:1000px">
+  <a href="{{ course.get_absolute_url }}" class="small">← {{ course.title }}</a>
+  <h1 class="h3 section-title mt-2 mb-3">Complete your enrollment</h1>
+  {% if pending_upi %}<div class="alert alert-warning"><i class="bi bi-hourglass-split me-1"></i>You already submitted a UPI payment (UTR {{ pending_upi.utr_number }}) for this course. It is awaiting verification by the academy.</div>{% endif %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      {% if batches %}
+      <div class="card card-body mb-3">
+        <label class="form-label fw-semibold" for="batch-select">Choose your batch (live classes)</label>
+        <select id="batch-select" class="form-select">
+          <option value="">No preference / recordings only</option>
+          {% for b in batches %}<option value="{{ b.pk }}" {% if batch and batch.pk == b.pk %}selected{% endif %}>{{ b.name }} — starts {{ b.start_date|date:"d M Y" }}{% if b.schedule %} ({{ b.schedule }}){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      {% if course.is_free %}
+      <form method="post" action="{% url 'enrollments:enroll_free' course.slug %}" class="card card-body">{% csrf_token %}
+        <input type="hidden" name="batch" class="batch-input" value="{{ batch.pk|default:'' }}">
+        <p>This course is free. Click below to get instant access.</p>
+        <button class="btn btn-cyan btn-lg">Enroll for free</button>
+      </form>
+      {% else %}
+        {% if razorpay_ready %}
+        <div class="card card-body mb-3">
+          <h2 class="h6 fw-bold"><i class="bi bi-credit-card me-1 text-cyan"></i>Pay online (instant access)</h2>
+          <p class="small text-muted">Cards, UPI, net banking and wallets via Razorpay. Your enrollment activates as soon as the payment is verified.</p>
+          <button id="rzp-btn" class="btn btn-cyan btn-lg" data-order-url="{% url 'enrollments:razorpay_order' course.slug %}">Pay {{ course.effective_price|inr }} securely</button>
+          <div id="rzp-error" class="text-danger small mt-2"></div>
+          <form id="rzp-verify" method="post" action="{% url 'enrollments:razorpay_verify' %}" class="d-none">{% csrf_token %}
+            <input type="hidden" name="razorpay_order_id"><input type="hidden" name="razorpay_payment_id"><input type="hidden" name="razorpay_signature">
+          </form>
+        </div>
+        {% endif %}
+        {% if academy.upi_enabled %}
+        <div class="card card-body">
+          <h2 class="h6 fw-bold"><i class="bi bi-qr-code me-1 text-cyan"></i>{% if razorpay_ready %}Or pay by UPI (manual verification){% else %}Pay by UPI{% endif %}</h2>
+          <div class="row g-3 align-items-center mb-3">
+            {% if academy.upi_qr_code %}<div class="col-sm-4"><img src="{{ academy.upi_qr_code.url }}" alt="UPI QR code" class="img-fluid border rounded"></div>{% endif %}
+            <div class="col">
+              {% if academy.upi_id %}<div>UPI ID: <strong class="user-select-all">{{ academy.upi_id }}</strong></div>{% endif %}
+              {% if academy.upi_payee_name %}<div>Payee: <strong>{{ academy.upi_payee_name }}</strong></div>{% endif %}
+              <div>Amount: <strong>{{ course.effective_price|inr }}</strong></div>
+              <p class="small text-muted mt-2 mb-0">{{ academy.upi_instructions }}</p>
+            </div>
+          </div>
+          {% if not pending_upi %}
+          <form method="post" action="{% url 'enrollments:upi_submit' course.slug %}" enctype="multipart/form-data" novalidate>{% csrf_token %}
+            <input type="hidden" name="batch" class="batch-input" value="{{ batch.pk|default:'' }}">
+            {% include "partials/form_errors.html" with form=upi_form %}
+            <div class="row">{% for field in upi_form %}<div class="col-md-6">{% include "partials/field.html" %}</div>{% endfor %}</div>
+            <button class="btn btn-primary">Submit payment details</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if not razorpay_ready and not academy.upi_enabled %}<div class="alert alert-warning">Online enrollment is temporarily unavailable. Please contact the academy.</div>{% endif %}
+      {% endif %}
+    </div>
+    <div class="col-lg-5">
+      <div class="card">
+        {% if course.thumbnail %}<img src="{{ course.thumbnail.url }}" class="course-thumb rounded-top" alt="">{% endif %}
+        <div class="card-body">
+          <h2 class="h5">{{ course.title }}</h2>
+          <p class="small text-muted">{{ course.short_description }}</p>
+          <div class="d-flex justify-content-between"><span>Course fee</span><span>{{ course.price|inr }}</span></div>
+          {% if course.discounted_price is not None %}<div class="d-flex justify-content-between text-success"><span>Discount</span><span>−{{ course.discount_percent }}%</span></div>{% endif %}
+          <hr><div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>{{ course.effective_price|inr }}</span></div>
+          <p class="small text-muted mt-2 mb-0"><i class="bi bi-shield-lock me-1"></i>Payments are verified on our server. Access is granted only after verification.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const sel = document.getElementById("batch-select");
+  function syncBatch() { document.querySelectorAll(".batch-input").forEach(i => i.value = sel ? sel.value : ""); }
+  if (sel) { sel.addEventListener("change", syncBatch); syncBatch(); }
+  const btn = document.getElementById("rzp-btn");
+  if (!btn) return;
+  const err = document.getElementById("rzp-error");
+  function loadRzp(cb) {
+    if (window.Razorpay) return cb();
+    const s = document.createElement("script"); s.src = "https://checkout.razorpay.com/v1/checkout.js"; s.onload = cb;
+    s.onerror = function () { err.textContent = "Could not load the payment window. Check your connection."; btn.disabled = false; };
+    document.head.appendChild(s);
+  }
+  btn.addEventListener("click", function () {
+    btn.disabled = true; err.textContent = "";
+    const fd = new FormData(); fd.append("batch", sel ? sel.value : "");
+    fetch(btn.dataset.orderUrl, { method: "POST", body: fd, credentials: "same-origin", headers: { "X-CSRFToken": window.tsCsrf() } })
+      .then(r => r.json()).then(function (o) {
+        if (!o.ok) { err.textContent = o.error || "Could not start payment."; btn.disabled = false; return; }
+        loadRzp(function () {
+          const rzp = new Razorpay({
+            key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description,
+            prefill: o.prefill, theme: { color: "#0b1f3a" },
+            handler: function (resp) {
+              const f = document.getElementById("rzp-verify");
+              f.razorpay_order_id.value = resp.razorpay_order_id;
+              f.razorpay_payment_id.value = resp.razorpay_payment_id;
+              f.razorpay_signature.value = resp.razorpay_signature;
+              f.submit();
+            },
+            modal: { ondismiss: function () { btn.disabled = false; } }
+          });
+          rzp.on("payment.failed", function (r) { err.textContent = (r.error && r.error.description) || "Payment failed."; btn.disabled = false; });
+          rzp.open();
+        });
+      }).catch(function () { err.textContent = "Network error. Please try again."; btn.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

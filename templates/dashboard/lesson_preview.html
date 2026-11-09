@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}Preview: {{ lesson.title }}{% endblock %}
+{% block page_title %}Lesson preview{% endblock %}
+{% block content %}
+<div class="preview-banner rounded p-2 small mb-3"><i class="bi bi-eye me-1"></i>Admin preview. Lesson is {% status_badge lesson.status lesson.get_status_display %}{% if video %}, showing video v{{ video.version }} ({{ video.get_status_display|lower }}){% if not video.is_active %} — <strong>not the active version</strong>{% endif %}{% endif %}.
+  {% if lesson.is_visible_to_students %}Students can see this lesson.{% else %}Students cannot see this lesson.{% endif %}</div>
+<div class="row g-4">
+  <div class="col-lg-8">
+    {% include "partials/video_player.html" %}
+    <h1 class="h4 mt-3 text-navy">{{ lesson.title }}</h1>
+    <div class="text-muted small mb-2">{{ lesson.module.course.title }} › {{ lesson.module.title }}</div>
+    <div>{{ lesson.description|linebreaks }}</div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card card-body mb-3">
+      <a href="{% url 'portal:lesson' lesson.module.course.slug lesson.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i>Open in student player</a>
+      <a href="{% url 'dashboard:video_history' lesson.pk %}" class="btn btn-outline-secondary btn-sm mb-2">Version history</a>
+      <a href="{% url 'dashboard:video_replace' lesson.pk %}" class="btn btn-cyan btn-sm">Replace video</a>
+    </div>
+    <div class="card"><div class="card-header small fw-semibold">Study materials</div>
+      <ul class="list-group list-group-flush">
+        {% for r in resources %}<li class="list-group-item small d-flex"><span class="me-auto"><i class="bi bi-file-earmark-text me-1"></i><a href="{{ r.download_url }}?inline=1" target="_blank">{{ r.title }}</a></span>{% if not r.is_published %}<span class="badge text-bg-secondary">hidden</span>{% endif %}</li>
+        {% empty %}<li class="list-group-item small text-muted">No materials.</li>{% endfor %}
+      </ul>
+      <div class="card-footer"><a class="small" href="{% url 'dashboard:resource_add' %}?lesson={{ lesson.pk }}">+ Add material</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

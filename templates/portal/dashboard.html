@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load lms %}
+{% block title %}My learning{% endblock %}
+{% block content %}
+<div class="page-header py-4">
+  <div class="container d-flex flex-wrap align-items-center gap-3">
+    <div class="me-auto"><h1 class="h3 fw-bold mb-0">Hi {{ user.first_name|default:user.display_name }} 👋</h1><p class="mb-0 text-white-50">{{ academy.tagline }}</p></div>
+    <a href="{% url 'core:course_list' %}" class="btn btn-outline-light btn-sm">Browse courses</a>
+  </div>
+</div>
+<div class="container py-4">
+  {% for u in pending_upi %}<div class="alert alert-warning small"><i class="bi bi-hourglass-split me-1"></i>Your UPI payment ({{ u.utr_number }}) for <strong>{{ u.course_title }}</strong> is awaiting verification. Access starts as soon as it's approved.</div>{% endfor %}
+  {% for a in announcements %}<div class="alert alert-info small"><i class="bi bi-megaphone me-1"></i><strong>{{ a.title }}</strong> — {{ a.body|truncatechars:200 }}</div>{% endfor %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <h2 class="h5 section-title">My courses</h2>
+      {% if enrollments %}
+      <div class="row g-3 mb-4">
+        {% for e in enrollments %}
+        <div class="col-md-6">
+          <div class="card course-card">
+            <a href="{% url 'portal:course_home' e.course.slug %}">{% if e.course.thumbnail %}<img src="{{ e.course.thumbnail.url }}" class="course-thumb" alt="">{% else %}<div class="course-thumb-placeholder"><i class="bi bi-mortarboard"></i></div>{% endif %}</a>
+            <div class="card-body">
+              <h3 class="h6 mb-1"><a class="text-navy" href="{% url 'portal:course_home' e.course.slug %}">{{ e.course.title }}</a></h3>
+              <div class="small text-muted mb-2">{% if e.batch %}Batch {{ e.batch.code }} · {% endif %}{% if e.expires_at %}access till {{ e.expires_at|date:"d M Y" }}{% else %}lifetime access{% endif %}</div>
+              <div class="progress mb-1"><div class="progress-bar" style="width:{{ e.progress.percent }}%"></div></div>
+              <div class="d-flex small"><span class="text-muted me-auto">{{ e.progress.completed }}/{{ e.progress.total }} lessons</span><strong>{{ e.progress.percent }}%</strong></div>
+              <a href="{% url 'portal:course_home' e.course.slug %}" class="btn btn-cyan btn-sm w-100 mt-2">{% if e.progress.completed %}Continue{% else %}Start learning{% endif %}</a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card mb-4"><div class="empty-state"><i class="bi bi-journal-plus"></i><h5 class="mt-2">You're not enrolled in any course yet</h5><a class="btn btn-cyan mt-2" href="{% url 'core:course_list' %}">Explore courses</a></div></div>
+      {% endif %}
+
+      <div class="card mb-4">
+        <div class="card-header fw-semibold"><i class="bi bi-stars text-cyan me-1"></i>Recently updated lessons</div>
+        <ul class="list-group list-group-flush">
+          {% for l in recent_lessons %}
+          <li class="list-group-item d-flex align-items-center gap-2">
+            <i class="bi {% if l.active_video %}bi-play-circle{% else %}bi-file-text{% endif %} text-cyan"></i>
+            <div class="me-auto"><a href="{% url 'portal:lesson' l.module.course.slug l.pk %}">{{ l.title }}</a><div class="small text-muted">{{ l.module.course.title }} › {{ l.module.title }}</div></div>
+            {% if l.is_new %}<span class="badge text-bg-success">New</span>{% else %}<span class="badge text-bg-info">Updated</span>{% endif %}
+            <span class="small text-muted text-nowrap">{{ l.content_updated_at|timesince }} ago</span>
+          </li>
+          {% empty %}<li class="list-group-item small text-muted">No lesson updates yet.</li>{% endfor %}
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header fw-semibold"><i class="bi bi-file-earmark-pdf text-cyan me-1"></i>Study materials</div>
+        <ul class="list-group list-group-flush">
+          {% for r in materials %}
+          <li class="list-group-item d-flex small"><span class="me-auto"><a href="{% url 'portal:lesson' r.lesson.module.course.slug r.lesson_id %}">{{ r.title }}</a> <span class="text-muted">— {{ r.lesson.module.course.title }}</span></span>{% if r.is_downloadable %}<a href="{{ r.download_url }}"><i class="bi bi-download"></i></a>{% endif %}</li>
+          {% empty %}<li class="list-group-item small text-muted">No materials yet.</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-header fw-semibold"><i class="bi bi-broadcast text-cyan me-1"></i>Upcoming live classes</div>
+        <ul class="list-group list-group-flush">
+          {% for c in upcoming %}
+          <li class="list-group-item">
+            <div class="fw-medium">{{ c.title }}</div>
+            <div class="small text-muted">{{ c.start_at|date:"D d M, h:i A" }} · {{ c.duration_minutes }} min · {{ c.batch.course.title }}</div>
+            {% if c.is_live_now %}<a href="{{ c.meet_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-success mt-2"><i class="bi bi-camera-video me-1"></i>Join now</a>
+            {% else %}<a href="{{ c.meet_url }}" target="_blank" rel="noopener" class="small">Google Meet link</a>{% endif %}
+          </li>
+          {% empty %}<li class="list-group-item small text-muted">No upcoming classes.</li>{% endfor %}
+        </ul>
+      </div>
+      <div class="card mb-4">
+        <div class="card-header fw-semibold d-flex"><span><i class="bi bi-journal-check text-cyan me-1"></i>Pending assignments</span><a class="ms-auto small" href="{% url 'portal:assignments' %}">All</a></div>
+        <ul class="list-group list-group-flush">
+          {% for a in assignments %}<li class="list-group-item small"><a href="{% url 'portal:assignment_detail' a.pk %}">{{ a.title }}</a><br><span class="text-muted">{{ a.course.title }}{% if a.due_at %} · due {{ a.due_at|date:"d M" }}{% endif %}</span>{% if a.is_overdue %} <span class="badge text-bg-danger">overdue</span>{% endif %}</li>
+          {% empty %}<li class="list-group-item small text-muted">You're all caught up.</li>{% endfor %}
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header fw-semibold d-flex"><span><i class="bi bi-award text-cyan me-1"></i>Certificates</span><a class="ms-auto small" href="{% url 'portal:certificates' %}">All</a></div>
+        <ul class="list-group list-group-flush">
+          {% for c in certificates %}<li class="list-group-item small"><a href="{% url 'portal:certificate' c.certificate_number %}">{{ c.course_title }}</a><br><span class="text-muted">{{ c.certificate_number }}</span></li>
+          {% empty %}<li class="list-group-item small text-muted">Complete a course to earn a certificate.</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

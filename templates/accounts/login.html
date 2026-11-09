@@ -1,0 +1,16 @@
+{% extends "accounts/_auth_layout.html" %}
+{% block title %}Log in{% endblock %}
+{% block heading %}Welcome back{% endblock %}
+{% block form %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn btn-primary w-100 btn-lg" type="submit">Log in</button>
+  <div class="d-flex justify-content-between mt-3 small">
+    <a href="{% url 'accounts:password_reset' %}">Forgot password?</a>
+    <a href="{% url 'accounts:signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Create account</a>
+  </div>
+</form>
+{% endblock %}

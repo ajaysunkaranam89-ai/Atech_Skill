@@ -1,0 +1,44 @@
+{% extends "dashboard/base.html" %}
+{% load lms %}
+{% block title %}{{ student }}{% endblock %}
+{% block page_title %}Student management{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <div class="me-auto"><h1 class="h4 mb-0 text-navy">{{ student.get_full_name|default:student.email }}</h1>
+    <div class="small text-muted">{{ student.email }} · {{ student.phone|default:"no phone" }} · joined {{ student.date_joined|date:"d M Y" }} · {% if student.is_active %}active{% else %}<span class="text-danger">disabled</span>{% endif %}</div></div>
+  <a href="{% url 'dashboard:student_edit' student.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>
+  {% if user.is_super_admin %}<a href="{% url 'dashboard:enrollment_add' %}?student={{ student.pk }}" class="btn btn-sm btn-cyan"><i class="bi bi-plus-lg me-1"></i>Enroll in course</a>{% endif %}
+</div>
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card mb-4"><div class="card-header fw-semibold">Enrollments & progress</div>
+      <div class="table-responsive"><table class="table table-manage">
+        <thead><tr><th>Course</th><th>Batch</th><th>Status</th><th>Progress</th><th>Expires</th>{% if user.is_super_admin %}<th></th>{% endif %}</tr></thead>
+        <tbody>{% for e in enrollments %}
+          <tr><td>{{ e.course_title }}</td><td>{{ e.batch.code|default:"—" }}</td><td>{% status_badge e.status e.get_status_display %}</td>
+            <td style="min-width:140px"><div class="progress"><div class="progress-bar" style="width:{{ e.progress.percent|default:0 }}%"></div></div><span class="small text-muted">{{ e.progress.completed|default:0 }}/{{ e.progress.total|default:0 }}</span></td>
+            <td class="small">{{ e.expires_at|date:"d M Y"|default:"Lifetime" }}</td>
+            {% if user.is_super_admin %}<td class="text-nowrap"><a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard:enrollment_edit' e.pk %}"><i class="bi bi-pencil"></i></a>
+              {% if e.status == 'active' %}<form method="post" action="{% url 'dashboard:enrollment_cancel' e.pk %}" class="d-inline" data-confirm="Cancel this enrollment? The student loses access.">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button></form>{% endif %}</td>{% endif %}
+          </tr>{% empty %}<tr><td colspan="6" class="text-muted small">No enrollments.</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+    <div class="card"><div class="card-header fw-semibold">Assignment submissions</div>
+      <ul class="list-group list-group-flush">{% for s in submissions %}<li class="list-group-item small d-flex"><span class="me-auto">{{ s.assignment.title }}</span>{% status_badge s.status s.get_status_display %}{% if s.marks is not None %}<span class="ms-2">{{ s.marks }}/{{ s.assignment.max_marks }}</span>{% endif %}</li>{% empty %}<li class="list-group-item small text-muted">None.</li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    {% if user.is_super_admin %}
+    <div class="card mb-4"><div class="card-header fw-semibold">Payments</div>
+      <ul class="list-group list-group-flush">{% for p in payments %}<li class="list-group-item small d-flex"><span class="me-auto">{{ p.created_at|date:"d M Y" }} · {{ p.course_title }}<br><span class="text-muted">{{ p.get_gateway_display }}</span></span><span class="text-end">₹{{ p.amount }}<br>{% status_badge p.status p.get_status_display %}</span></li>{% empty %}<li class="list-group-item small text-muted">No payments.</li>{% endfor %}</ul>
+    </div>
+    {% if upi %}<div class="card mb-4"><div class="card-header fw-semibold">UPI submissions</div>
+      <ul class="list-group list-group-flush">{% for u in upi %}<li class="list-group-item small d-flex"><a class="me-auto" href="{% url 'dashboard:upi_review' u.pk %}">{{ u.utr_number }}</a>{% status_badge u.status u.get_status_display %}</li>{% endfor %}</ul></div>{% endif %}
+    {% endif %}
+    <div class="card mb-4"><div class="card-header fw-semibold">Batches</div>
+      <ul class="list-group list-group-flush">{% for b in batches %}<li class="list-group-item small">{{ b.batch.code }} — {{ b.batch.course.title }}</li>{% empty %}<li class="list-group-item small text-muted">Not in any batch.</li>{% endfor %}</ul></div>
+    <div class="card"><div class="card-header fw-semibold">Certificates</div>
+      <ul class="list-group list-group-flush">{% for c in certificates %}<li class="list-group-item small">{{ c.certificate_number }} — {{ c.course_title }}{% if c.is_revoked %} <span class="badge text-bg-danger">revoked</span>{% endif %}</li>{% empty %}<li class="list-group-item small text-muted">None.</li>{% endfor %}</ul></div>
+  </div>
+</div>
+{% endblock %}
