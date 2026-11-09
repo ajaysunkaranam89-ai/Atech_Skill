@@ -4,6 +4,20 @@
 {% block page_title %}Dashboard overview{% endblock %}
 {% block content %}
 <h1 class="h4 text-navy mb-3">Welcome, {{ user.display_name }}</h1>
+{% if backup %}
+  {% if backup.state == "ok" %}
+  <div class="alert alert-success py-2 small d-flex align-items-center gap-2"><i class="bi bi-database-check"></i>Last backup {{ backup.finished|timesince }} ago ({{ backup.size_mb }} MB). Remember to copy backups off the server.</div>
+  {% elif backup.state == "missing" %}
+  <div class="alert alert-warning py-2 small d-flex align-items-center gap-2"><i class="bi bi-database-exclamation"></i>No automatic backup has run yet. On the server, the <code>backup</code> container runs nightly; check it with <code>docker compose logs backup</code>.</div>
+  {% else %}
+  <div class="alert alert-danger py-2 small d-flex align-items-center gap-2"><i class="bi bi-database-x"></i><strong>Backups need attention:</strong>&nbsp;{% if backup.state == "failed" %}the last backup failed ({{ backup.message }}){% elif backup.state == "stale" %}the last successful backup was {{ backup.finished|timesince }} ago{% else %}{{ backup.message }}{% endif %}. Check <code>docker compose logs backup</code>.</div>
+  {% endif %}
+{% endif %}
+{% if email.queue and not email.worker_ok %}
+<div class="alert alert-danger py-2 small"><i class="bi bi-envelope-x me-1"></i><strong>Emails are not being sent:</strong> the email worker is not running ({{ email.pending }} waiting). Check <code>docker compose logs worker</code>.</div>
+{% elif email.failed %}
+<div class="alert alert-warning py-2 small"><i class="bi bi-envelope-exclamation me-1"></i>{{ email.failed }} email(s) failed to send. <a href="{% url 'dashboard:email_outbox' %}?status=failed">Review and retry</a>.</div>
+{% endif %}
 <div class="row g-3 mb-4">
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-journal-richtext"></i></div><div><div class="kpi-value">{{ stats.courses }}</div><div class="small text-muted">Courses ({{ stats.published }} published)</div></div></div></div>
   <div class="col-6 col-xl-3"><div class="kpi d-flex gap-3"><div class="kpi-icon"><i class="bi bi-camera-reels"></i></div><div><div class="kpi-value">{{ stats.lessons }}</div><div class="small text-muted">Lessons</div></div></div></div>

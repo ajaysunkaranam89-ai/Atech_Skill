@@ -68,6 +68,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.SecurityHeadersMiddleware",
     "apps.core.middleware.LeadAttributionMiddleware",
+    "apps.accounts.middleware.StaffTwoFactorMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -172,7 +173,11 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------------------------------------------------------- Email
-EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+# EMAIL_BACKEND in .env is the real delivery method (SMTP/console). With EMAIL_QUEUE=1 (Docker default)
+# the app only queues emails in the database and the `worker` container delivers them with retries.
+EMAIL_DELIVERY_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_QUEUE = env_bool("EMAIL_QUEUE", False)
+EMAIL_BACKEND = "apps.core.mail.QueuedEmailBackend" if EMAIL_QUEUE else EMAIL_DELIVERY_BACKEND
 EMAIL_HOST = env("EMAIL_HOST", "localhost")
 EMAIL_PORT = env_int("EMAIL_PORT", 587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
@@ -189,6 +194,10 @@ PAYMENT_CURRENCY = "INR"
 
 # ---------------------------------------------------------------- Login rate limiting
 LOGIN_MAX_ATTEMPTS = env_int("LOGIN_MAX_ATTEMPTS", 5)
+# Administrators, course admins and trainers must use an authenticator app.
+STAFF_2FA_REQUIRED = env_bool("STAFF_2FA_REQUIRED", True)
+# The raw Django admin is an emergency tool only; off unless explicitly enabled.
+DJANGO_ADMIN_ENABLED = env_bool("DJANGO_ADMIN_ENABLED", False)
 LOGIN_LOCKOUT_SECONDS = env_int("LOGIN_LOCKOUT_SECONDS", 900)
 
 # ---------------------------------------------------------------- Security
@@ -198,7 +207,7 @@ SESSION_COOKIE_AGE = env_int("SESSION_COOKIE_AGE", 60 * 60 * 24 * 7)
 CSRF_COOKIE_HTTPONLY = False  # templates read the token from the form, JS from cookie
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-X_FRAME_OPTIONS = "SAMEORIGIN"
+X_FRAME_OPTIONS = "DENY"  # no site embeds our pages in frames
 
 HTTPS_ENABLED = env_bool("HTTPS_ENABLED", False)
 if HTTPS_ENABLED:
@@ -211,6 +220,29 @@ if HTTPS_ENABLED:
     SECURE_HSTS_PRELOAD = False
     SECURE_REDIRECT_EXEMPT = [r"^healthz/$"]
 
+# Written by the `backup` container; read by the dashboard to show backup health.
+BACKUP_STATUS_FILE = Path(env("BACKUP_DIR", BASE_DIR / "backups")) / "last.json"
+
+# ---------------------------------------------------------------- Error alerts
+# Email full error reports to these people (format: "Name <email>, Name2 <email2>").
+ADMINS = []
+for _entry in env_list("DJANGO_ADMINS", ""):
+    _name, _, _mail = _entry.partition("<")
+    ADMINS.append((_name.strip() or _mail.strip(">"), _mail.strip(" >") or _name.strip()))
+SERVER_EMAIL = env("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+EMAIL_SUBJECT_PREFIX = "[TechSkills error] "
+
+SENTRY_DSN = env("SENTRY_DSN", "")
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=env("SENTRY_ENVIRONMENT", "production"),
+        traces_sample_rate=float(env("SENTRY_TRACES_SAMPLE_RATE", "0")),
+        send_default_pii=False,  # never send student emails/IPs to Sentry
+    )
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
@@ -221,6 +253,11 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
+    "filters": {"require_debug_false": {"()": "django.utils.log.RequireDebugFalse"}},
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+        "mail_admins": {"level": "ERROR", "class": "django.utils.log.AdminEmailHandler", "filters": ["require_debug_false"]},
+    },
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
+    "loggers": {"django.request": {"handlers": ["console", "mail_admins"], "level": "ERROR", "propagate": False}},
 }

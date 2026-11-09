@@ -123,15 +123,19 @@ class StaffList(ManageListView):
         return User.objects.exclude(role=Role.STUDENT)
 
     def columns(self):
-        return ["Name", "Email", "Role", "Last login", "Status"]
+        return ["Name", "Email", "Role", "2-step login", "Last login", "Status"]
 
     def row(self, o):
         return [o.get_full_name() or "—", o.email, o.get_role_display(),
+                badge(o.totp_enabled, "On" if o.totp_enabled else "Not set up"),
                 o.last_login.strftime("%d %b %Y %H:%M") if o.last_login else "never",
                 badge(o.is_active, "Active" if o.is_active else "Disabled")]
 
     def actions(self, o):
         acts = super().actions(o)
+        if o.totp_enabled and o.pk != self.request.user.pk:
+            acts.append({"label": "Reset 2FA", "url": reverse("dashboard:staff_reset_2fa", args=[o.pk]),
+                         "icon": "phone", "post": {"x": "1"}, "danger": True})
         if o.role == Role.TRAINER:
             acts.append({"label": "Trainer profile", "url": reverse("dashboard:trainer_profile", args=[o.pk]), "icon": "person-badge"})
         return acts
@@ -158,6 +162,24 @@ class StaffUpdate(ManageUpdateView):
 
     def get_queryset(self):
         return User.objects.exclude(role=Role.STUDENT)
+
+
+@staff_required("super")
+@require_POST
+def staff_reset_2fa(request, pk):
+    """Lost phone: clear another staff member's authenticator so they set it up again at next login."""
+    target = get_object_or_404(User.objects.exclude(role=Role.STUDENT), pk=pk)
+    if target.pk == request.user.pk:
+        messages.error(request, "Use 'My 2-step login' to reset your own authenticator.")
+        return redirect("dashboard:staff")
+    target.totp_enabled = False
+    target.totp_secret = ""
+    target.totp_recovery_codes = []
+    target.totp_last_counter = 0
+    target.save(update_fields=["totp_enabled", "totp_secret", "totp_recovery_codes", "totp_last_counter"])
+    audit.log(request, "2fa_reset_by_admin", target)
+    messages.success(request, f"2-step login reset for {target.email}. They will set it up again at their next login.")
+    return redirect("dashboard:staff")
 
 
 @staff_required("super")

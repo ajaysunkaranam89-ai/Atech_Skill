@@ -45,6 +45,13 @@ class User(AbstractUser):
     # Self-registered students start unverified; accounts created by administrators are trusted.
     email_verified = models.BooleanField(default=True)
 
+    # Two-factor authentication (authenticator app) - required for staff in production
+    totp_secret = models.CharField(max_length=64, blank=True, editable=False)
+    totp_enabled = models.BooleanField(default=False)
+    totp_last_counter = models.BigIntegerField(default=0, editable=False)
+    totp_recovery_codes = models.JSONField(default=list, blank=True, editable=False)
+    totp_enabled_at = models.DateTimeField(null=True, blank=True, editable=False)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 

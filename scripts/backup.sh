@@ -4,8 +4,11 @@
 #        KEEP_DAYS=14 ./scripts/backup.sh   (delete backups older than 14 days, default 30)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export MSYS_NO_PATHCONV=1  # Git Bash on Windows: do not rewrite container paths like /app
 
-set -a; [ -f .env ] && . ./.env; set +a
+# Read only the values we need (.env is not valid shell syntax, e.g. "Name <email>" values).
+envget() { [ -f .env ] && grep -E "^$1=" .env | tail -1 | cut -d= -f2- | tr -d '\r'; }
+POSTGRES_DB=$(envget POSTGRES_DB); POSTGRES_USER=$(envget POSTGRES_USER)
 STAMP=$(date +%Y%m%d_%H%M%S)
 DEST="backups/${STAMP}"
 KEEP_DAYS="${KEEP_DAYS:-30}"

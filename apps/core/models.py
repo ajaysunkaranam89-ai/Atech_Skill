@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.db import models
+from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from .india import STATE_CHOICES
@@ -224,3 +225,31 @@ class Enquiry(models.Model):
     def whatsapp_phone(self):
         digits = "".join(ch for ch in self.phone if ch.isdigit())
         return ("91" + digits) if len(digits) == 10 else digits
+
+
+class OutboundEmail(models.Model):
+    """Queued outgoing email (see apps.core.mail)."""
+
+    PENDING, SENDING, SENT, FAILED = "pending", "sending", "sent", "failed"
+    STATUS_CHOICES = [(PENDING, "Queued"), (SENDING, "Sending"), (SENT, "Sent"), (FAILED, "Failed")]
+
+    subject = models.CharField(max_length=255)
+    body = models.TextField(blank=True)
+    html = models.TextField(blank=True)
+    from_email = models.CharField(max_length=254)
+    to = models.JSONField(default=list)
+    cc = models.JSONField(default=list, blank=True)
+    bcc = models.JSONField(default=list, blank=True)
+    reply_to = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING, db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    last_error = models.CharField(max_length=500, blank=True)
+    next_attempt_at = models.DateTimeField(default=timezone.now, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.subject} -> {', '.join(self.to)}"

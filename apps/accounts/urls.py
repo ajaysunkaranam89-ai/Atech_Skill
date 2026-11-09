@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from . import views
+from . import twofa, views
 
 app_name = "accounts"
 
@@ -12,6 +12,10 @@ urlpatterns = [
     path("after-login/", views.after_login, name="after_login"),
     path("profile/", views.profile, name="profile"),
     path("verify-email/", views.verify_pending, name="verify_pending"),
+    path("2fa/verify/", twofa.verify, name="twofa_verify"),
+    path("2fa/", twofa.setup, name="twofa_setup"),
+    path("2fa/recovery-codes/", twofa.regenerate_codes, name="twofa_codes"),
+    path("2fa/reset/", twofa.reset_own, name="twofa_reset"),
     path("verify-email/resend/", views.resend_verification, name="resend_verification"),
     path("verify-email/<uidb64>/<token>/", views.verify_email, name="verify_email"),
     path("password/change/", views.PasswordChangeView.as_view(), name="password_change"),

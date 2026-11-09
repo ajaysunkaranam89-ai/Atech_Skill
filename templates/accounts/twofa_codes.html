@@ -1,0 +1,15 @@
+{% extends "accounts/_auth_layout.html" %}
+{% block title %}Recovery codes{% endblock %}
+{% block heading %}{% if first_time %}2-step login is on{% else %}New recovery codes{% endif %}{% endblock %}
+{% block subheading %}Save these recovery codes now{% endblock %}
+{% block form %}
+<div class="alert alert-warning small"><i class="bi bi-exclamation-triangle me-1"></i>If you lose your phone, each code below lets you log in <strong>once</strong>. They are shown only now; store them somewhere safe (password manager or printed copy).{% if not first_time %} Your previous codes no longer work.{% endif %}</div>
+<div class="row g-2 mb-3 font-monospace text-center" id="codes">
+  {% for c in codes %}<div class="col-6"><div class="border rounded py-2 bg-light">{{ c }}</div></div>{% endfor %}
+</div>
+<div class="d-flex gap-2">
+  <button type="button" class="btn btn-outline-secondary w-50" onclick="navigator.clipboard.writeText([...document.querySelectorAll('#codes .border')].map(e=>e.textContent).join('\n'));this.textContent='Copied ✓'"><i class="bi bi-clipboard me-1"></i>Copy</button>
+  <button type="button" class="btn btn-outline-secondary w-50" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+</div>
+<a href="{% url 'accounts:after_login' %}" class="btn btn-primary w-100 mt-3">I've saved them – continue</a>
+{% endblock %}

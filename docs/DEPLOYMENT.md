@@ -129,3 +129,9 @@ Take a backup before every update.
 - [ ] Razorpay webhook secret configured; live keys only on production
 - [ ] Review **Audit log** periodically (logins, failed logins, deletions, payments, exports)
 - [ ] Optional: a CSP header in Nginx once you know every third-party origin you use (YouTube, Razorpay, jsDelivr, Google Fonts)
+
+## 13. Security & reliability features
+- **2-step login (staff):** with `STAFF_2FA_REQUIRED=1` every admin, course admin and trainer must scan a QR code with an authenticator app (Google/Microsoft Authenticator, Authy) before using the dashboard. Each gets 8 one-time recovery codes. A Super Admin can reset a lost phone from **Administrators → Reset 2FA**. `/django-admin/` is disabled unless `DJANGO_ADMIN_ENABLED=1`.
+- **Email queue:** all emails are stored in the database and delivered by the `worker` container (retries after 1, 5, 15, 60, 240 min). See **Email delivery** in the dashboard; check `docker compose logs worker`.
+- **Error alerts:** set `DJANGO_ADMINS="Name <email>"` to receive error reports by email and/or `SENTRY_DSN` for Sentry (no personal data is sent).
+- **Nightly backups:** the `backup` container writes `./backups/<timestamp>/` at `BACKUP_HOUR` (default 02:00) and keeps `BACKUP_KEEP_DAYS` (default 14). The dashboard shows the last backup and turns red if it fails or is older than 30 h. Copy `./backups` off the server daily, e.g. `rclone sync ./backups remote:techskills-backups`. Restore with `./scripts/restore.sh backups/<timestamp>`.

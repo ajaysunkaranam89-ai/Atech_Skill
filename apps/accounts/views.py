@@ -32,6 +32,15 @@ class LoginView(auth_views.LoginView):
 
     def form_valid(self, form):
         ratelimit.reset(self.request, form.cleaned_data.get("username"))
+        user = form.get_user()
+        if user.totp_enabled:
+            # Password OK; hold the login until the authenticator code is checked.
+            from django.utils import timezone as tz
+
+            self.request.session["2fa_pending"] = {
+                "uid": user.pk, "ts": tz.now().timestamp(), "backend": user.backend, "next": self.get_success_url(),
+            }
+            return redirect("accounts:twofa_verify")
         response = super().form_valid(form)  # rotates the session key
         audit.log(self.request, "login", self.request.user)
         return response

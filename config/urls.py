@@ -17,8 +17,16 @@ urlpatterns = [
     path("notifications/", include("apps.notifications.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
     path("api/", include("apps.portal.api_urls")),
-    path("django-admin/", admin.site.urls),
 ]
+
+if settings.DJANGO_ADMIN_ENABLED:
+    from django.contrib.auth.views import redirect_to_login
+
+    def _admin_login(request, extra_context=None):
+        return redirect_to_login(request.GET.get("next", "/django-admin/"))
+
+    admin.site.login = _admin_login  # never bypass two-factor login
+    urlpatterns.append(path("django-admin/", admin.site.urls))
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

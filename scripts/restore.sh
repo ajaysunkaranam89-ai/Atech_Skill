@@ -4,10 +4,13 @@
 # WARNING: replaces the current database contents and media files.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export MSYS_NO_PATHCONV=1  # Git Bash on Windows: do not rewrite container paths like /app
 
 SRC="${1:?Usage: $0 backups/<timestamp>}"
 [ -f "$SRC/database.dump" ] || { echo "Missing $SRC/database.dump"; exit 1; }
-set -a; [ -f .env ] && . ./.env; set +a
+# Read only the values we need (.env is not valid shell syntax, e.g. "Name <email>" values).
+envget() { [ -f .env ] && grep -E "^$1=" .env | tail -1 | cut -d= -f2- | tr -d '\r'; }
+POSTGRES_DB=$(envget POSTGRES_DB); POSTGRES_USER=$(envget POSTGRES_USER)
 
 ( cd "$SRC" && sha256sum -c SHA256SUMS )
 

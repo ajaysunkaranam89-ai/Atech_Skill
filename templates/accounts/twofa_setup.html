@@ -1,0 +1,22 @@
+{% extends "accounts/_auth_layout.html" %}
+{% block title %}Set up 2-step login{% endblock %}
+{% block heading %}Set up 2-step login{% endblock %}
+{% block subheading %}{% if required %}Required for all academy staff accounts{% else %}Protect your account{% endif %}{% endblock %}
+{% block form %}
+{% if required %}<div class="alert alert-info small"><i class="bi bi-shield-lock me-1"></i>Staff accounts control courses, students and payments, so a code from your phone is needed in addition to your password.</div>{% endif %}
+<ol class="small ps-3">
+  <li>Install an authenticator app on your phone: <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong> or <strong>Authy</strong>.</li>
+  <li>In the app, tap <strong>+</strong> and scan this QR code:</li>
+</ol>
+<div class="text-center my-2"><div class="d-inline-block p-2 bg-white border rounded" style="width:216px">{{ qr|safe }}</div></div>
+<p class="small text-center text-muted">Can't scan? Enter this key manually:<br><code class="fs-6 user-select-all">{{ secret }}</code></p>
+<form method="post" autocomplete="off">
+  {% csrf_token %}
+  {% if error %}<div class="alert alert-danger py-2 small">{{ error }}</div>{% endif %}
+  <label class="form-label fw-medium small" for="code">3. Enter the 6-digit code the app shows</label>
+  <input id="code" name="code" class="form-control form-control-lg text-center mb-3" inputmode="numeric" autocomplete="one-time-code"
+         maxlength="7" required placeholder="123456" style="letter-spacing:.3em">
+  <button class="btn btn-primary w-100">Turn on 2-step login</button>
+</form>
+<form method="post" action="{% url 'accounts:logout' %}" class="text-center mt-3">{% csrf_token %}<button class="btn btn-link btn-sm">Log out</button></form>
+{% endblock %}

@@ -50,6 +50,7 @@ def png(name="thumb.png"):
     RAZORPAY_WEBHOOK_SECRET="whsec_test",
     ALLOWED_HOSTS=["testserver"],
     USE_X_ACCEL_REDIRECT=False,
+    STAFF_2FA_REQUIRED=False,  # tests log staff in directly; 2FA has its own tests
 )
 class LMSTestCase(TestCase):
     password = "Str0ng!Passw0rd"

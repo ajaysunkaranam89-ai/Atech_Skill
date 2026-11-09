@@ -95,6 +95,10 @@ def overview(request):
             "new_students_30d": User.objects.filter(role=Role.STUDENT, date_joined__gte=now - timedelta(days=30)).count(),
         }
         ctx["recent_payments"] = paid.select_related("student").order_by("-paid_at")[:6]
+        from apps.core import ops as _ops
+
+        ctx["backup"] = _ops.backup_status()
+        ctx["email"] = _ops.email_status()
     return render(request, "dashboard/overview.html", ctx)
 
 
@@ -733,3 +737,59 @@ def enquiry_export(request):
                     e.referrer, e.source_page])
     audit.log(request, "export", object_type="enquiries")
     return resp
+
+
+# --------------------------------------------------------------------- email outbox & system health
+from apps.core import ops  # noqa: E402
+from apps.core.models import OutboundEmail  # noqa: E402
+
+
+class EmailOutboxList(ManageListView):
+    capability = "super"
+    section = "system"
+    model = OutboundEmail
+    title = "Email delivery (outbox)"
+    search_fields = ["subject", "to", "last_error"]
+    filters = [("status", "Status", OutboundEmail.STATUS_CHOICES)]
+    sort_options = {"-created": ("Newest", "-created_at")}
+    default_sort = "-created"
+    paginate_by = 50
+
+    def base_queryset(self):
+        return OutboundEmail.objects.all()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        st = ops.email_status()
+        if st.get("queue"):
+            ctx["summary_html"] = format_html(
+                "Worker: <strong>{}</strong> · {} waiting · {} failed",
+                "running" if st["worker_ok"] else "NOT RUNNING", st["pending"], st["failed"])
+        if OutboundEmail.objects.filter(status=OutboundEmail.FAILED).exists():
+            ctx["extra_buttons"] = [("Retry all failed", reverse("dashboard:email_retry", args=[0]), "arrow-clockwise")]
+        return ctx
+
+    def columns(self):
+        return ["Queued", "To", "Subject", "Status", "Attempts", "Last error"]
+
+    def row(self, o):
+        return [timezone.localtime(o.created_at).strftime("%d %b %H:%M"), ", ".join(o.to)[:60], o.subject[:70],
+                badge({"pending": "pending", "sending": "pending", "sent": "paid", "failed": "failed"}[o.status], o.get_status_display()),
+                o.attempts, o.last_error[:80]]
+
+    def actions(self, o):
+        if o.status == OutboundEmail.FAILED:
+            return [{"label": "Retry", "url": reverse("dashboard:email_retry", args=[o.pk]), "icon": "arrow-clockwise", "post": {"x": "1"}}]
+        return []
+
+
+@staff_required("super")
+@require_POST
+def email_retry(request, pk):
+    qs = OutboundEmail.objects.filter(status=OutboundEmail.FAILED)
+    if pk:
+        qs = qs.filter(pk=pk)
+    n = qs.update(status=OutboundEmail.PENDING, attempts=0, next_attempt_at=timezone.now(), last_error="")
+    audit.log(request, "email_retry", object_type="outboundemail", object_repr=f"{n} email(s)")
+    messages.success(request, f"{n} email(s) queued for another attempt.")
+    return redirect("dashboard:email_outbox")

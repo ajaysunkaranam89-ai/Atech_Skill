@@ -28,14 +28,62 @@ services:
       MEDIA_ROOT: /app/media
       PRIVATE_MEDIA_ROOT: /app/private_media
       USE_X_ACCEL_REDIRECT: "1"
+      EMAIL_QUEUE: "1"
+      BACKUP_DIR: /app/backups
     volumes:
       - static_data:/app/staticfiles
       - media_data:/app/media
       - private_media:/app/private_media
+      - ./backups:/app/backups:ro
     depends_on:
       db:
         condition: service_healthy
     networks: [backend, frontend]
+
+  # Delivers queued emails (notifications, verification, password reset, lead alerts) with retries.
+  worker:
+    image: techskills-academy:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      EMAIL_QUEUE: "1"
+      RUN_MIGRATIONS: "0"
+    command: ["python", "manage.py", "email_worker"]
+    entrypoint: []
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "shell", "-c", "from apps.core.mail import worker_last_seen as w; import sys; s=w(); sys.exit(0 if s is not None and s < 120 else 1)"]
+      interval: 60s
+      timeout: 20s
+      start_period: 30s
+      retries: 3
+    networks: [backend]
+
+  # Nightly database + uploads backup into ./backups (see docs/DEPLOYMENT.md §9).
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TIME_ZONE:-Asia/Kolkata}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_ON_START: ${BACKUP_ON_START:-0}
+    entrypoint: ["sh", "/backup-cron.sh"]
+    volumes:
+      - ./docker/backup-cron.sh:/backup-cron.sh:ro
+      - ./backups:/backups
+      - media_data:/data/media:ro
+      - private_media:/data/private_media:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
 
   nginx:
     image: nginx:1.27-alpine

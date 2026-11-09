@@ -64,6 +64,7 @@ urlpatterns = [
     path("staff/add/", vp.StaffCreate.as_view(), name="staff_add"),
     path("staff/<int:pk>/edit/", vp.StaffUpdate.as_view(), name="staff_edit"),
     path("staff/<int:pk>/trainer-profile/", vp.trainer_profile, name="trainer_profile"),
+    path("staff/<int:pk>/reset-2fa/", vp.staff_reset_2fa, name="staff_reset_2fa"),
     path("enrollments/", vp.EnrollmentList.as_view(), name="enrollments"),
     path("enrollments/add/", vp.EnrollmentCreate.as_view(), name="enrollment_add"),
     path("enrollments/<int:pk>/edit/", vp.EnrollmentUpdate.as_view(), name="enrollment_edit"),
@@ -95,4 +96,6 @@ urlpatterns = [
     path("reports/", vo.reports, name="reports"),
     path("settings/", vo.site_settings, name="settings"),
     path("audit/", vo.AuditLogList.as_view(), name="audit"),
+    path("system/email/", vo.EmailOutboxList.as_view(), name="email_outbox"),
+    path("system/email/<int:pk>/retry/", vo.email_retry, name="email_retry"),
 ]

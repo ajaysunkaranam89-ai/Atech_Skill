@@ -33,6 +33,7 @@
     <a class="nav-link {% if s == 'admins' %}active{% endif %}" href="{% url 'dashboard:staff' %}"><i class="bi bi-shield-lock"></i>Administrators</a>
     <a class="nav-link {% if s == 'settings' %}active{% endif %}" href="{% url 'dashboard:settings' %}"><i class="bi bi-gear"></i>Website settings</a>
     <a class="nav-link {% if s == 'audit' %}active{% endif %}" href="{% url 'dashboard:audit' %}"><i class="bi bi-clipboard-data"></i>Audit log</a>
+    <a class="nav-link {% if s == 'system' %}active{% endif %}" href="{% url 'dashboard:email_outbox' %}"><i class="bi bi-envelope-paper"></i>Email delivery</a>
     {% endif %}
   </nav>
   {% endwith %}
@@ -47,6 +48,7 @@
         <a class="dropdown-toggle small text-dark" href="#" data-bs-toggle="dropdown">{{ user.display_name }} <span class="badge text-bg-light">{{ user.get_role_display }}</span></a>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">Change password</a></li>
+          <li><a class="dropdown-item" href="{% url 'accounts:twofa_setup' %}">My 2-step login</a></li>
           <li><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item">Log out</button></form></li>
         </ul>
       </div>
