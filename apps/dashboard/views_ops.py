@@ -219,6 +219,7 @@ def batch_detail(request, pk):
         "batch": batch, "form": form, "section": "batches",
         "members": batch.batch_students.select_related("student").order_by("student__first_name"),
         "classes": batch.live_classes.order_by("start_at"),
+        "attendance": batch_attendance_summary(batch),
     })
 
 
@@ -252,6 +253,9 @@ def _notify_live(request, lc, created):
 
 
 class LiveClassList(ManageListView):
+    def actions(self, o):
+        return [{"label": "Attendance", "url": reverse("dashboard:live_attendance", args=[o.pk]), "icon": "person-check"}] + super().actions(o)
+
     section = "live"
     model = LiveClass
     title = "Live class management (Google Meet)"
@@ -1029,3 +1033,60 @@ class WhyChooseDelete(ManageDeleteView):
     section = "website"
     model = WhyChooseItem
     success_url_name = "dashboard:why"
+
+
+# --------------------------------------------------------------------- attendance
+from apps.courses.models import Attendance  # noqa: E402
+
+
+@staff_required("staff")
+def live_attendance(request, pk):
+    lc = get_object_or_404(LiveClass.objects.select_related("batch__course"), pk=pk)
+    if not can_manage_course(request.user, lc.batch.course):
+        raise PermissionDenied
+    students = list(User.objects.filter(batch_memberships__batch=lc.batch).order_by("first_name", "email"))
+    existing = {a.student_id: a.status for a in lc.attendance.all()}
+    if request.method == "POST":
+        valid = dict(Attendance.STATUS_CHOICES)
+        for s in students:
+            status = request.POST.get(f"s{s.pk}", Attendance.ABSENT)
+            if status in valid:
+                Attendance.objects.update_or_create(live_class=lc, student=s, defaults={"status": status, "marked_by": request.user})
+        if lc.status == LiveClassStatus.SCHEDULED and lc.start_at <= timezone.now():
+            lc.status = LiveClassStatus.COMPLETED
+            lc.save(update_fields=["status", "updated_at"])
+        audit.log(request, "attendance", lc, {"marked": len(students)})
+        messages.success(request, f"Attendance saved for {len(students)} student(s).")
+        return redirect("dashboard:batch_detail", lc.batch_id)
+    rows = [(s, existing.get(s.pk, Attendance.PRESENT if not existing else Attendance.ABSENT)) for s in students]
+    return render(request, "dashboard/attendance.html", {"lc": lc, "rows": rows, "choices": Attendance.STATUS_CHOICES,
+                                                        "already": bool(existing), "section": "live"})
+
+
+def batch_attendance_summary(batch):
+    """[(student, attended, total, percent)] over completed/marked classes of the batch."""
+    classes = list(batch.live_classes.filter(attendance__isnull=False).distinct().values_list("pk", flat=True))
+    total = len(classes)
+    counts = dict(Attendance.objects.filter(live_class_id__in=classes, status__in=[Attendance.PRESENT, Attendance.LATE])
+                  .values_list("student_id").annotate(n=Count("id")))
+    out = []
+    for m in batch.batch_students.select_related("student").order_by("student__first_name"):
+        n = counts.get(m.student_id, 0)
+        out.append((m.student, n, total, round(n * 100 / total) if total else None))
+    return out
+
+
+@staff_required("staff")
+def batch_attendance_csv(request, pk):
+    batch = get_object_or_404(Batch.objects.select_related("course"), pk=pk)
+    if not can_manage_course(request.user, batch.course):
+        raise PermissionDenied
+    classes = list(batch.live_classes.order_by("start_at"))
+    marks = {(a.live_class_id, a.student_id): a.get_status_display() for a in Attendance.objects.filter(live_class__in=classes)}
+    resp = HttpResponse(content_type="text/csv")
+    resp["Content-Disposition"] = f'attachment; filename="attendance-{batch.code}.csv"'
+    w = csv.writer(resp)
+    w.writerow(["student", "email"] + [timezone.localtime(c.start_at).strftime("%d %b %H:%M") for c in classes] + ["attended %"])
+    for st, n, total, pct in batch_attendance_summary(batch):
+        w.writerow([st.get_full_name(), st.email] + [marks.get((c.pk, st.pk), "") for c in classes] + [pct if pct is not None else ""])
+    return resp

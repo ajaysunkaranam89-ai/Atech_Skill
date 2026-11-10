@@ -207,3 +207,62 @@ class VideoExperienceTests(LMSTestCase):
         html = self.client.get("/").content.decode()
         self.assertIn("Own lab servers", html)
         self.assertNotIn("Hands-on labs", html)
+
+
+class FinalFeatureTests(LMSTestCase):
+    def test_indian_money_format(self):
+        from apps.core.pdf import CURRENCY, money
+
+        self.assertEqual(money(1234567.5), f"{CURRENCY}12,34,567.50")
+        self.assertEqual(money(999), f"{CURRENCY}999.00")
+
+    def test_attendance(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.courses.models import Attendance, Batch, BatchStudent, LiveClass
+
+        c = self.make_course()
+        b = Batch.objects.create(course=c, name="B", code="B1", start_date="2026-12-01")
+        for u in (self.student, self.outsider):
+            BatchStudent.objects.create(batch=b, student=u)
+        lc = LiveClass.objects.create(batch=b, title="L1", meet_url="https://meet.google.com/abc-defg-hij",
+                                      start_at=timezone.now() - timedelta(hours=1))
+        self.login(self.trainer)
+        self.client.post(reverse("dashboard:live_attendance", args=[lc.pk]),
+                         {f"s{self.student.pk}": "present", f"s{self.outsider.pk}": "absent"})
+        self.assertEqual(Attendance.objects.get(student=self.student).status, "present")
+        lc.refresh_from_db()
+        self.assertEqual(lc.status, "completed")
+        html = self.client.get(reverse("dashboard:batch_detail", args=[b.pk])).content.decode()
+        self.assertIn("1/1 · 100%", html)
+        self.assertIn("0/1 · 0%", html)
+        self.assertIn("Present", self.client.get(reverse("dashboard:batch_attendance_csv", args=[b.pk])).content.decode())
+        self.login(self.other_trainer)
+        self.assertEqual(self.client.get(reverse("dashboard:live_attendance", args=[lc.pk])).status_code, 403)
+
+    def test_csv_import(self):
+        from django.core import mail
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.accounts.models import User
+        from apps.courses.access import valid_enrollment
+
+        c = self.make_course(title="CCNA")
+        csv = ("email,first_name,phone,course\nnew1@x.com,Asha,9876543210,ccna\n"
+               f"{self.student.email},,,ccna\nbad-email,,,\n{self.trainer.email},,,\n")
+        f = lambda: SimpleUploadedFile("s.csv", csv.encode(), content_type="text/csv")
+        self.login(self.owner)
+        r = self.client.post(reverse("dashboard:student_import"), {"file": f(), "mode": "check"})
+        self.assertContains(r, "nothing saved yet")
+        self.assertFalse(User.objects.filter(email="new1@x.com").exists())
+        self.client.post(reverse("dashboard:student_import"), {"file": f(), "mode": "import"})
+        u = User.objects.get(email="new1@x.com")
+        self.assertIsNotNone(valid_enrollment(u, c))
+        self.assertIsNotNone(valid_enrollment(self.student, c))
+        self.assertFalse(u.has_usable_password())
+        self.assertTrue(any("set-password" in m.body or "Set your password" in m.body for m in mail.outbox))
+        self.assertEqual(User.objects.filter(email="bad-email").count(), 0)
+        self.login(self.course_admin)
+        self.assertEqual(self.client.get(reverse("dashboard:student_import")).status_code, 403)

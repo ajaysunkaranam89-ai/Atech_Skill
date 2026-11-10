@@ -1,0 +1,11 @@
+{% autoescape off %}Hello {{ user.first_name|default:user.email }},
+
+Your student account at A TechSkills Academy has been created by the academy.
+
+Set your password here to log in and start learning:
+{{ protocol }}://{{ domain }}{% url 'accounts:password_reset_confirm' uidb64=uid token=token %}
+
+Login email: {{ user.email }}
+
+— A TechSkills Academy
+{% endautoescape %}

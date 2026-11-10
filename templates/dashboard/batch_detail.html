@@ -29,9 +29,11 @@
     </div>
   </div>
   <div class="col-lg-5">
+    <div class="card mb-4"><div class="card-header fw-semibold d-flex">Attendance<a class="ms-auto small" href="{% url 'dashboard:batch_attendance_csv' batch.pk %}"><i class="bi bi-download me-1"></i>CSV</a></div>
+      <ul class="list-group list-group-flush">{% for st, n, total, pct in attendance %}<li class="list-group-item small d-flex"><span class="me-auto">{{ st.get_full_name|default:st.email }}</span>{% if pct is None %}<span class="text-muted">no classes marked</span>{% else %}<span class="{% if pct < 75 %}text-danger fw-semibold{% endif %}">{{ n }}/{{ total }} · {{ pct }}%</span>{% endif %}</li>{% empty %}<li class="list-group-item small text-muted">No students.</li>{% endfor %}</ul></div>
     <div class="card"><div class="card-header fw-semibold">Live classes</div>
       <ul class="list-group list-group-flush">
-        {% for c in classes %}<li class="list-group-item small"><a href="{% url 'dashboard:live_edit' c.pk %}">{{ c.title }}</a><br><span class="text-muted">{{ c.start_at|date:"D d M Y, h:i A" }}</span> {% status_badge c.status c.get_status_display %}</li>
+        {% for c in classes %}<li class="list-group-item small"><a href="{% url 'dashboard:live_attendance' c.pk %}" class="float-end btn btn-sm btn-outline-primary py-0">Attendance</a><a href="{% url 'dashboard:live_edit' c.pk %}">{{ c.title }}</a><br><span class="text-muted">{{ c.start_at|date:"D d M Y, h:i A" }}</span> {% status_badge c.status c.get_status_display %}</li>
         {% empty %}<li class="list-group-item small text-muted">No classes scheduled.</li>{% endfor %}
       </ul>
     </div>

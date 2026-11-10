@@ -12,6 +12,9 @@ WORKDIR /app
 RUN groupadd --system --gid 1000 app \
  && useradd --system --uid 1000 --gid app --home /app --shell /usr/sbin/nologin app
 
+# DejaVu fonts give PDFs (invoices, brochures) a real ₹ symbol.
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 

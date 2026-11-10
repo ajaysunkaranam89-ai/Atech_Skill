@@ -1,0 +1,35 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Import students{% endblock %}
+{% block page_title %}Import students (CSV){% endblock %}
+{% block content %}
+<a href="{% url 'dashboard:students' %}" class="small">← Students</a>
+<div class="row g-4 mt-1">
+  <div class="col-lg-5">
+    <form method="post" enctype="multipart/form-data" class="card card-body">{% csrf_token %}
+      <h1 class="h5 text-navy">Upload a CSV file</h1>
+      <p class="small text-muted mb-2">Columns: <code>email</code> (required), <code>first_name</code>, <code>last_name</code>, <code>phone</code>, <code>course</code> (slug or exact title), <code>batch</code> (batch code). Max 1000 rows.</p>
+      <a class="small mb-3" href="{% url 'dashboard:student_import_template' %}"><i class="bi bi-download me-1"></i>Download template</a>
+      <input type="file" name="file" accept=".csv" class="form-control mb-3" required>
+      <div class="d-flex gap-2">
+        <button name="mode" value="check" class="btn btn-outline-primary">Check only</button>
+        <button name="mode" value="import" class="btn btn-primary" data-confirm="Create accounts, enroll students and send set-password emails?">Import</button>
+      </div>
+      <p class="small text-muted mt-3 mb-0">New students get an email to set their password. Existing students are only enrolled. Enrollments are activated as "Added by administrator" (no payment).</p>
+    </form>
+  </div>
+  <div class="col-lg-7">
+    {% if results %}
+    <div class="card"><div class="card-header fw-semibold">{% if applied %}Import result{% else %}Check result – nothing saved yet{% endif %}</div>
+      <div class="table-responsive"><table class="table table-manage mb-0">
+        <thead><tr><th>Line</th><th>Email</th><th>Status</th><th>Details</th></tr></thead>
+        <tbody>{% for r in results %}<tr>
+          <td>{{ r.line }}</td><td>{{ r.email }}</td>
+          <td>{% if r.action == "error" %}<span class="badge text-bg-danger">Error</span>{% elif r.action == "new" %}<span class="badge text-bg-success">New</span>{% else %}<span class="badge text-bg-info">Existing</span>{% endif %}</td>
+          <td class="small">{% if r.errors %}<span class="text-danger">{{ r.errors|join:"; " }}</span>{% elif r.notes %}{{ r.notes|join:"; " }}{% else %}{{ r.course }}{% if r.batch %} ({{ r.batch }}){% endif %}{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

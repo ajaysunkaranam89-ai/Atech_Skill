@@ -2,6 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q, Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import format_html
@@ -43,6 +44,12 @@ class StudentList(ManageListView):
                     "-enrollments": ("Most enrollments", "-n_enr")}
     default_sort = "-joined"
     create_url = "dashboard:student_add"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.user.is_super_admin:
+            ctx["extra_buttons"] = [("Import CSV", reverse("dashboard:student_import"), "upload")]
+        return ctx
     create_label = "Add student"
 
     def base_queryset(self):
@@ -366,3 +373,124 @@ def enrollment_cancel(request, pk):
     audit.log(request, "enrollment_cancel", e, {"status": [old, e.status]})
     messages.success(request, "Enrollment cancelled. Payment history is kept.")
     return redirect(request.POST.get("next") or "dashboard:enrollments")
+
+
+# --------------------------------------------------------------------- CSV import
+IMPORT_MAX_ROWS = 1000
+
+
+def _import_rows(rows, request, apply):
+    """Validate (and if apply, create) students/enrollments. Returns list of row results."""
+    import re as _re
+
+    from django.core.validators import validate_email
+
+    from apps.accounts.models import StudentProfile
+    from apps.courses.models import Batch
+
+    courses = {c.slug: c for c in Course.objects.all()}
+    courses.update({c.title.lower(): c for c in Course.objects.all()})
+    batches = {b.code.upper(): b for b in Batch.objects.select_related("course")}
+    results, seen = [], set()
+    for i, r in enumerate(rows, start=2):
+        r = {k.strip().lower(): (v or "").strip() for k, v in r.items() if k}
+        email, errs, notes = r.get("email", "").lower(), [], []
+        try:
+            validate_email(email)
+        except Exception:
+            errs.append("invalid email")
+        if email in seen:
+            errs.append("duplicate in file")
+        seen.add(email)
+        course = None
+        if r.get("course"):
+            course = courses.get(r["course"]) or courses.get(r["course"].lower())
+            if not course:
+                errs.append(f"course '{r['course']}' not found")
+        batch = None
+        if r.get("batch"):
+            batch = batches.get(r["batch"].upper())
+            if not batch:
+                errs.append(f"batch '{r['batch']}' not found")
+            elif course and batch.course_id != course.pk:
+                errs.append("batch belongs to another course")
+            else:
+                course = course or batch.course
+        phone = _re.sub(r"[^\d+]", "", r.get("phone", ""))[:20]
+        user = User.objects.filter(email=email).first()
+        if user and user.role != Role.STUDENT:
+            errs.append("email belongs to a staff account")
+        action = "error" if errs else ("existing" if user else "new")
+        if apply and not errs:
+            if not user:
+                user = User.objects.create_user(email, None, first_name=r.get("first_name", "")[:150],
+                                                last_name=r.get("last_name", "")[:150], phone=phone)
+                StudentProfile.objects.get_or_create(user=user)
+                _send_set_password_email(user)
+                notes.append("account created, set-password email sent")
+            if course:
+                from apps.enrollments.models import EnrollmentSource
+                from apps.enrollments.services import activate_enrollment
+
+                activate_enrollment(user, course, EnrollmentSource.ADMIN, batch=batch)
+                notes.append(f"enrolled in {course.title}" + (f" ({batch.code})" if batch else ""))
+        results.append({"line": i, "email": email or "—", "action": action, "errors": errs, "notes": notes,
+                        "course": course.title if course else "", "batch": batch.code if batch else ""})
+    return results
+
+
+def _send_set_password_email(user):
+    """Imported users have no password yet; Django's reset form skips them, so send the link directly."""
+    from urllib.parse import urlparse
+
+    from django.conf import settings
+    from django.contrib.auth.tokens import default_token_generator
+    from django.core.mail import send_mail
+    from django.template.loader import render_to_string
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    from apps.core.models import SiteSettings
+
+    site = urlparse(settings.SITE_URL)
+    ctx = {"user": user, "uid": urlsafe_base64_encode(force_bytes(user.pk)), "token": default_token_generator.make_token(user),
+           "protocol": site.scheme or "https", "domain": site.netloc, "site_name": SiteSettings.load().site_name}
+    subject = render_to_string("accounts/welcome_import_subject.txt", ctx).strip()
+    send_mail(subject, render_to_string("accounts/welcome_import_email.txt", ctx), None, [user.email])
+
+
+@staff_required("super")
+def student_import(request):
+    import csv as _csv
+    import io
+
+    results, applied = None, False
+    if request.method == "POST" and request.FILES.get("file"):
+        f = request.FILES["file"]
+        if not f.name.lower().endswith(".csv") or f.size > 2 * 1024 * 1024:
+            messages.error(request, "Upload a .csv file (max 2 MB).")
+            return redirect("dashboard:student_import")
+        text = f.read().decode("utf-8-sig", errors="replace")
+        rows = list(_csv.DictReader(io.StringIO(text)))
+        if not rows or "email" not in [h.strip().lower() for h in (rows[0].keys() if rows else [])]:
+            messages.error(request, "The file needs a header row with at least an 'email' column.")
+            return redirect("dashboard:student_import")
+        if len(rows) > IMPORT_MAX_ROWS:
+            messages.error(request, f"Maximum {IMPORT_MAX_ROWS} rows per file.")
+            return redirect("dashboard:student_import")
+        applied = request.POST.get("mode") == "import"
+        results = _import_rows(rows, request, apply=applied)
+        if applied:
+            ok = sum(1 for r in results if r["action"] != "error")
+            audit.log(request, "student_import", object_type="user", object_repr=f"{ok} rows imported",
+                      changes={"rows": len(results), "errors": len(results) - ok})
+            messages.success(request, f"Imported {ok} row(s); {len(results) - ok} skipped with errors.")
+    return render(request, "dashboard/student_import.html", {"results": results, "applied": applied, "section": "students"})
+
+
+@staff_required("super")
+def student_import_template(request):
+    resp = HttpResponse("email,first_name,last_name,phone,course,batch\nstudent@example.com,Ravi,Kumar,9876543210,ccna,CCNA-NOV\n",
+                        content_type="text/csv")
+    resp["Content-Disposition"] = 'attachment; filename="students_import_template.csv"'
+    return resp

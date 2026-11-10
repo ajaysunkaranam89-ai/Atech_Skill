@@ -3,6 +3,7 @@
 Uses the built-in Helvetica fonts so no system font packages are needed; the
 rupee symbol is written as "Rs." because Helvetica has no ₹ glyph.
 """
+import re
 from io import BytesIO
 
 from django.conf import settings
@@ -42,8 +43,38 @@ def _qr(url, size):
     return d
 
 
+def _register_fonts():
+    """Use DejaVu Sans (has the ₹ glyph) when installed; otherwise Helvetica with "Rs."."""
+    import os
+
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    dirs = [os.environ.get("PDF_FONT_DIR", ""), "/usr/share/fonts/truetype/dejavu", str(settings.BASE_DIR / "static" / "fonts")]
+    for d in dirs:
+        reg, bold = os.path.join(d, "DejaVuSans.ttf"), os.path.join(d, "DejaVuSans-Bold.ttf")
+        if d and os.path.exists(reg) and os.path.exists(bold):
+            pdfmetrics.registerFont(TTFont("DejaVuSans", reg))
+            pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", bold))
+            return "DejaVuSans", "DejaVuSans-Bold", "DejaVuSans", "₹"
+    return "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Rs. "
+
+
+REG, BOLD, ITALIC, CURRENCY = _register_fonts()
+
+
+def indian_grouping(n):
+    """1234567.5 -> '12,34,567.50' (Indian lakh/crore grouping)."""
+    whole, frac = f"{abs(n):.2f}".split(".")
+    if len(whole) > 3:
+        head, tail = whole[:-3], whole[-3:]
+        head = ",".join(re.findall(r"\d{1,2}", head[::-1]))[::-1] if head else ""
+        whole = head + "," + tail
+    return ("-" if n < 0 else "") + whole + "." + frac
+
+
 def money(v):
-    return f"Rs. {v:,.2f}"
+    return f"{CURRENCY}{indian_grouping(float(v))}"
 
 
 # ------------------------------------------------------------------ certificate
@@ -78,69 +109,69 @@ def certificate_pdf(cert, verify_url, site_name, tagline):
         c.drawImage(logo, (w - lw) / 2, h - 70 - lh, lw, lh, mask="auto")
         top = h - 80 - lh
     else:
-        c.setFont("Helvetica-Bold", 26)
+        c.setFont(BOLD, 26)
         c.setFillColor(NAVY)
         c.drawCentredString(w / 2, h - 100, site_name)
         top = h - 120
 
     c.setFillColor(MUTED)
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont(BOLD, 13)
     c.drawCentredString(w / 2, top - 22, "C E R T I F I C A T E   O F   C O M P L E T I O N")
 
-    c.setFont("Helvetica", 13)
+    c.setFont(REG, 13)
     c.setFillColor(colors.black)
     c.drawCentredString(w / 2, top - 58, "This is to certify that")
 
     name = cert.student.get_full_name() or cert.student.email
     size = 34 if len(name) < 28 else 26
-    c.setFont("Helvetica-Bold", size)
+    c.setFont(BOLD, size)
     c.setFillColor(NAVY)
     c.drawCentredString(w / 2, top - 100, name)
     c.setStrokeColor(CYAN)
     c.setLineWidth(1.5)
     c.line(w / 2 - 190, top - 110, w / 2 + 190, top - 110)
 
-    c.setFont("Helvetica", 13)
+    c.setFont(REG, 13)
     c.setFillColor(colors.black)
     c.drawCentredString(w / 2, top - 138, "has successfully completed the course")
-    c.setFont("Helvetica-Bold", 22)
+    c.setFont(BOLD, 22)
     c.setFillColor(BLUE)
     c.drawCentredString(w / 2, top - 170, cert.course_title)
     if cert.grade:
-        c.setFont("Helvetica", 13)
+        c.setFont(REG, 13)
         c.setFillColor(colors.black)
         c.drawCentredString(w / 2, top - 194, f"with grade {cert.grade}")
 
     # Footer row: date | tagline | QR + number
     y = 70
     c.setFillColor(MUTED)
-    c.setFont("Helvetica", 10)
+    c.setFont(REG, 10)
     c.drawString(70, y + 30, "Issued on")
     c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont(BOLD, 13)
     c.drawString(70, y + 12, timezone.localtime(cert.issued_at).strftime("%d %B %Y"))
 
     c.setFillColor(MUTED)
-    c.setFont("Helvetica-Oblique", 11)
+    c.setFont(ITALIC, 11)
     c.drawCentredString(w / 2, y + 12, tagline)
 
     qr_size = 74
     renderPDF.draw(_qr(verify_url, qr_size), c, w - 70 - qr_size, y - 6)
     c.setFillColor(MUTED)
-    c.setFont("Helvetica", 9)
+    c.setFont(REG, 9)
     c.drawRightString(w - 80 - qr_size, y + 40, "Certificate No.")
     c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont(BOLD, 12)
     c.drawRightString(w - 80 - qr_size, y + 24, cert.certificate_number)
     c.setFillColor(MUTED)
-    c.setFont("Helvetica", 8)
+    c.setFont(REG, 8)
     c.drawRightString(w - 80 - qr_size, y + 10, "Scan to verify")
     c.drawRightString(w - 80 - qr_size, y, verify_url.replace("https://", "").replace("http://", ""))
 
     if cert.is_revoked:
         c.saveState()
         c.setFillColor(colors.Color(0.85, 0.1, 0.1, alpha=0.25))
-        c.setFont("Helvetica-Bold", 90)
+        c.setFont(BOLD, 90)
         c.translate(w / 2, h / 2)
         c.rotate(25)
         c.drawCentredString(0, 0, "REVOKED")
@@ -158,12 +189,12 @@ def invoice_pdf(inv, amount_words):
         buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=16 * mm,
         title=f"{inv.title} {inv.number}", author=inv.seller_name,
     )
-    base = ParagraphStyle("b", fontName="Helvetica", fontSize=9.5, leading=13)
+    base = ParagraphStyle("b", fontName=REG, fontSize=9.5, leading=13)
     small = ParagraphStyle("s", parent=base, fontSize=8.5, leading=11.5, textColor=MUTED)
-    bold = ParagraphStyle("bd", parent=base, fontName="Helvetica-Bold")
-    h1 = ParagraphStyle("h1", parent=base, fontName="Helvetica-Bold", fontSize=18, leading=22, textColor=NAVY, alignment=TA_RIGHT)
+    bold = ParagraphStyle("bd", parent=base, fontName=BOLD)
+    h1 = ParagraphStyle("h1", parent=base, fontName=BOLD, fontSize=18, leading=22, textColor=NAVY, alignment=TA_RIGHT)
     right = ParagraphStyle("r", parent=base, alignment=TA_RIGHT)
-    label = ParagraphStyle("l", parent=small, fontName="Helvetica-Bold", textColor=NAVY)
+    label = ParagraphStyle("l", parent=small, fontName=BOLD, textColor=NAVY)
 
     def p(text, style=base):
         from django.utils.html import escape
@@ -226,7 +257,7 @@ def invoice_pdf(inv, amount_words):
     items = Table([header, row], colWidths=widths, repeatRows=1)
     items.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), NAVY), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("FONTNAME", (0, 0), (-1, 0), BOLD), ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("ALIGN", (-1, 0), (-1, -1), "RIGHT"), ("ALIGN", (-3, 0), (-2, -1), "RIGHT") if inv.is_tax_invoice else ("ALIGN", (0, 0), (0, 0), "LEFT"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LINEBELOW", (0, -1), (-1, -1), 0.6, colors.HexColor("#dbe3ee")),
@@ -246,7 +277,7 @@ def invoice_pdf(inv, amount_words):
     tt = Table(totals, colWidths=[40 * mm, 30 * mm], hAlign="RIGHT")
     tt.setStyle(TableStyle([
         ("ALIGN", (1, 0), (1, -1), "RIGHT"), ("FONTSIZE", (0, 0), (-1, -1), 9.5),
-        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"), ("TEXTCOLOR", (0, -1), (-1, -1), NAVY),
+        ("FONTNAME", (0, -1), (-1, -1), BOLD), ("TEXTCOLOR", (0, -1), (-1, -1), NAVY),
         ("LINEABOVE", (0, -1), (-1, -1), 1, NAVY), ("TOPPADDING", (0, 0), (-1, -1), 3),
     ]))
     story += [tt, Spacer(1, 6), p(f"Amount in words: {amount_words}", bold), Spacer(1, 10)]
@@ -279,10 +310,10 @@ def brochure_pdf(course, site):
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=14 * mm,
                             bottomMargin=16 * mm, title=f"{course.title} – brochure", author=site.site_name)
-    base = ParagraphStyle("b", fontName="Helvetica", fontSize=10, leading=14)
+    base = ParagraphStyle("b", fontName=REG, fontSize=10, leading=14)
     small = ParagraphStyle("s", parent=base, fontSize=8.5, leading=11.5, textColor=MUTED)
-    h1 = ParagraphStyle("h1", parent=base, fontName="Helvetica-Bold", fontSize=22, leading=27, textColor=NAVY)
-    h2 = ParagraphStyle("h2", parent=base, fontName="Helvetica-Bold", fontSize=13, leading=17, textColor=NAVY, spaceBefore=10, spaceAfter=4)
+    h1 = ParagraphStyle("h1", parent=base, fontName=BOLD, fontSize=22, leading=27, textColor=NAVY)
+    h2 = ParagraphStyle("h2", parent=base, fontName=BOLD, fontSize=13, leading=17, textColor=NAVY, spaceBefore=10, spaceAfter=4)
     bullet = ParagraphStyle("li", parent=base, leftIndent=12, bulletIndent=2)
 
     from django.utils.html import escape
@@ -304,7 +335,7 @@ def brochure_pdf(course, site):
              ["Fee", "Free" if course.is_free else money(course.effective_price)],
              ["Certificate", "Yes, verifiable online" if course.certificate_enabled else "—"]]
     ft = Table(facts, colWidths=[38 * mm, 136 * mm])
-    ft.setStyle(TableStyle([("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"), ("TEXTCOLOR", (0, 0), (0, -1), NAVY),
+    ft.setStyle(TableStyle([("FONTNAME", (0, 0), (0, -1), BOLD), ("TEXTCOLOR", (0, 0), (0, -1), NAVY),
                             ("FONTSIZE", (0, 0), (-1, -1), 10), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f4f7fb")),
                             ("LINEBELOW", (0, 0), (-1, -2), 0.4, colors.HexColor("#dbe3ee")),
                             ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))

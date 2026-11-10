@@ -55,9 +55,13 @@ urlpatterns = [
     path("live/add/", vo.LiveClassCreate.as_view(), name="live_add"),
     path("live/<int:pk>/edit/", vo.LiveClassUpdate.as_view(), name="live_edit"),
     path("live/<int:pk>/delete/", vo.LiveClassDelete.as_view(), name="live_delete"),
+    path("live/<int:pk>/attendance/", vo.live_attendance, name="live_attendance"),
+    path("batches/<int:pk>/attendance.csv", vo.batch_attendance_csv, name="batch_attendance_csv"),
     # People
     path("students/", vp.StudentList.as_view(), name="students"),
     path("students/add/", vp.StudentCreate.as_view(), name="student_add"),
+    path("students/import/", vp.student_import, name="student_import"),
+    path("students/import/template.csv", vp.student_import_template, name="student_import_template"),
     path("students/<int:pk>/", vp.student_detail, name="student_detail"),
     path("students/<int:pk>/edit/", vp.StudentUpdate.as_view(), name="student_edit"),
     path("staff/", vp.StaffList.as_view(), name="staff"),

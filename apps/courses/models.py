@@ -705,3 +705,20 @@ class Certificate(models.Model):
 
     def get_absolute_url(self):
         return reverse("core:certificate_verify", args=[self.certificate_number])
+
+
+class Attendance(models.Model):
+    PRESENT, LATE, ABSENT = "present", "late", "absent"
+    STATUS_CHOICES = [(PRESENT, "Present"), (LATE, "Late"), (ABSENT, "Absent")]
+
+    live_class = models.ForeignKey(LiveClass, on_delete=models.CASCADE, related_name="attendance")
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="attendance")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PRESENT)
+    marked_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    marked_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["live_class", "student"], name="uniq_attendance")]
+
+    def __str__(self):
+        return f"{self.student} – {self.live_class} – {self.status}"
