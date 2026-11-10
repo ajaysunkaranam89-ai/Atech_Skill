@@ -39,9 +39,9 @@
           <td class="text-end text-nowrap">
             {% for a in actions %}
               {% if a.post %}
-                <form method="post" action="{{ a.url }}" class="d-inline" data-confirm="{{ a.label }}: are you sure?">{% csrf_token %}{% for k, v in a.post.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-sm {% if a.danger %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" title="{{ a.label }}"><i class="bi bi-{{ a.icon }}"></i><span class="d-none d-xl-inline ms-1">{{ a.label }}</span></button></form>
+                <form method="post" action="{{ a.url }}" class="d-inline" data-confirm="{{ a.label }}: are you sure?">{% csrf_token %}{% for k, v in a.post.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-sm {% if a.danger %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" title="{{ a.label }}" aria-label="{{ a.label }}"><i class="bi bi-{{ a.icon }}" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">{{ a.label }}</span></button></form>
               {% else %}
-                <a href="{{ a.url }}" class="btn btn-sm {% if a.danger %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" title="{{ a.label }}"><i class="bi bi-{{ a.icon }}"></i><span class="d-none d-xl-inline ms-1">{{ a.label }}</span></a>
+                <a href="{{ a.url }}" class="btn btn-sm {% if a.danger %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" title="{{ a.label }}" aria-label="{{ a.label }}"><i class="bi bi-{{ a.icon }}" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">{{ a.label }}</span></a>
               {% endif %}
             {% endfor %}
           </td>

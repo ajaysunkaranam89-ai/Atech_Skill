@@ -27,7 +27,7 @@
         </div>
       </div>
       {% endif %}
-      <h2 class="h5 section-title">My courses</h2>
+      <h2 class="h5 section-title" id="courses">My courses</h2>
       {% if enrollments %}
       <div class="row g-3 mb-4">
         {% for e in enrollments %}
@@ -75,7 +75,7 @@
 
     <div class="col-lg-4">
       <div class="card mb-4">
-        <div class="card-header fw-semibold"><i class="bi bi-broadcast text-cyan me-1"></i>Upcoming live classes</div>
+        <div class="card-header fw-semibold" id="classes"><i class="bi bi-broadcast text-cyan me-1"></i>Upcoming live classes</div>
         <ul class="list-group list-group-flush">
           {% for c in upcoming %}
           <li class="list-group-item d-flex gap-3 align-items-start">

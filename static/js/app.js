@@ -262,3 +262,32 @@
     const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
   }
 })();
+
+/* Theme toggle, image skeletons, chart skeletons. */
+(function () {
+  document.querySelectorAll("[data-theme-toggle]").forEach(function (b) {
+    const sync = function () {
+      const dark = document.documentElement.getAttribute("data-bs-theme") === "dark";
+      b.querySelector("i").className = "bi " + (dark ? "bi-sun" : "bi-moon-stars") + " fs-5";
+      b.setAttribute("aria-pressed", dark ? "true" : "false");
+    };
+    sync();
+    b.addEventListener("click", function () {
+      const next = document.documentElement.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-bs-theme", next);
+      try { localStorage.setItem("ts-theme", next); } catch (e) {}
+      sync();
+    });
+  });
+  document.querySelectorAll("img.course-thumb, img.thumb-sm").forEach(function (img) {
+    if (img.complete) return;
+    img.classList.add("skeleton");
+    const done = function () { img.classList.remove("skeleton"); };
+    img.addEventListener("load", done); img.addEventListener("error", done);
+  });
+  document.querySelectorAll("canvas[aria-label]").forEach(function (c) {
+    c.parentElement.classList.add("skeleton-box");
+    const t = setInterval(function () { if (window.Chart && Chart.getChart(c)) { c.parentElement.classList.remove("skeleton-box"); clearInterval(t); } }, 150);
+    setTimeout(function () { clearInterval(t); c.parentElement.classList.remove("skeleton-box"); }, 8000);
+  });
+})();

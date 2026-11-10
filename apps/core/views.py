@@ -61,6 +61,18 @@ def course_list(request):
         qs = qs.filter(category__slug=cat)
     if level:
         qs = qs.filter(level=level)
+    mode = request.GET.get("mode", "")
+    if mode in ("live", "recorded", "hybrid"):
+        qs = qs.filter(mode=mode)
+    if request.GET.get("free"):
+        qs = qs.filter(Q(discounted_price=0) | Q(discounted_price__isnull=True, price=0))
+    if request.GET.get("soon"):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        qs = qs.filter(next_batch_date__gte=today, next_batch_date__lte=today + timedelta(days=30))
     sort = request.GET.get("sort", "")
     qs = qs.order_by({"price": "price", "-price": "-price", "new": "-published_at"}.get(sort, "-is_featured"), "title")
     page = Paginator(qs, 12).get_page(request.GET.get("page"))
@@ -72,6 +84,7 @@ def course_list(request):
             "categories": CourseCategory.objects.filter(is_active=True),
             "levels": Course._meta.get_field("level").choices,
             "q": q, "cat": cat, "level": level, "sort": sort,
+            "mode": request.GET.get("mode", ""), "free": request.GET.get("free", ""), "soon": request.GET.get("soon", ""),
         },
     )
 

@@ -1,6 +1,7 @@
 {% extends "base_html.html" %}
 {% load static %}
 {% block body %}
+<a class="skip-link" href="#main">Skip to main content</a>
 {% include "partials/site_header.html" %}
 {% if user.is_authenticated and user.is_student and not user.email_verified and academy.require_email_verification %}
 <div class="bg-warning-subtle border-bottom border-warning-subtle py-2 small">
@@ -11,12 +12,26 @@
 </div>
 {% endif %}
 {% block messages %}{% include "partials/messages.html" %}{% endblock %}
-<main>{% block content %}{% endblock %}</main>
+<main id="main" tabindex="-1">{% block content %}{% endblock %}</main>
 {% if academy.whatsapp_number and not noindex %}
 <a class="whatsapp-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"
    href="https://wa.me/{{ academy.whatsapp_number|cut:'+'|cut:' '|cut:'-' }}?text={% filter urlencode %}Hi {{ academy.site_name }}, I'm interested in {% if course %}the {{ course.title }} course{% else %}your IT courses{% endif %}. Please share details.{% endfilter %}">
   <i class="bi bi-whatsapp"></i><span class="d-none d-md-inline ms-2">Chat with us</span>
 </a>
+{% endif %}
+{% if not noindex and request.resolver_match.url_name != 'enquiry' %}
+<a class="advisor-float" href="{% url 'core:enquiry' %}{% if course %}?course={{ course.pk }}{% endif %}" aria-label="Talk to a course advisor">
+  <i class="bi bi-headset" aria-hidden="true"></i><span class="d-none d-md-inline ms-2">Talk to advisor</span>
+</a>
+{% endif %}
+{% if user.is_authenticated and request.resolver_match.app_name in 'portal notifications accounts' %}
+<nav class="bottom-nav d-lg-none" aria-label="Student navigation">
+  <a href="{% url 'portal:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-house" aria-hidden="true"></i><span>Home</span></a>
+  <a href="{% url 'portal:dashboard' %}#courses"><i class="bi bi-collection-play" aria-hidden="true"></i><span>My courses</span></a>
+  <a href="{% url 'portal:dashboard' %}#classes"><i class="bi bi-calendar-event" aria-hidden="true"></i><span>Classes</span></a>
+  <a href="{% url 'notifications:inbox' %}" class="{% if request.resolver_match.app_name == 'notifications' %}active{% endif %}"><i class="bi bi-bell" aria-hidden="true"></i><span>Alerts{% if unread_notifications %} ({{ unread_notifications }}){% endif %}</span></a>
+  <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><i class="bi bi-person" aria-hidden="true"></i><span>Profile</span></a>
+</nav>
 {% endif %}
 {% include "partials/site_footer.html" %}
 {% endblock %}

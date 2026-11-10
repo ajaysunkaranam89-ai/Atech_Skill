@@ -266,3 +266,35 @@ class FinalFeatureTests(LMSTestCase):
         self.assertEqual(User.objects.filter(email="bad-email").count(), 0)
         self.login(self.course_admin)
         self.assertEqual(self.client.get(reverse("dashboard:student_import")).status_code, 403)
+
+
+class UiPackTests(LMSTestCase):
+    def test_filters_toggle_nav_a11y(self):
+        from apps.courses.models import Batch, Course
+
+        live = self.make_course(title="Live CCNA")
+        live.mode = "live"
+        live.save()
+        rec = self.make_course(title="Recorded Linux", price=0)
+        rec.mode = "recorded"
+        rec.save()
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        Batch.objects.create(course=live, name="Soon", code="S1", start_date=timezone.localdate() + timedelta(days=5))
+        url = reverse("core:course_list")
+        html = self.client.get(url, {"mode": "live"}).content.decode()
+        self.assertIn("Live CCNA", html)
+        self.assertNotIn('text-navy">Recorded Linux', html)
+        self.assertIn("Recorded Linux", self.client.get(url, {"free": "1"}).content.decode())
+        soon = self.client.get(url, {"soon": "1"}).content.decode()
+        self.assertIn("Live CCNA", soon)
+        self.assertNotIn('text-navy">Recorded Linux', soon)
+        home = self.client.get("/").content.decode()
+        for t in ("data-theme-toggle", 'class="skip-link"', 'id="main"', "advisor-float"):
+            self.assertIn(t, home)
+        self.assertNotIn("bottom-nav", home)
+        self.enroll(self.student, live)
+        self.login(self.student)
+        self.assertIn("bottom-nav", self.client.get(reverse("portal:dashboard")).content.decode())

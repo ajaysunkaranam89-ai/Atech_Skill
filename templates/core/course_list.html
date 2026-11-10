@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load lms %}
 {% block title %}Courses{% endblock %}
 {% block content %}
 <div class="page-header">
@@ -20,6 +21,16 @@
       <div class="col-md-1 d-grid"><button class="btn btn-primary">Go</button></div>
     </div>
   </form>
+  <div class="filter-chips mb-4" role="group" aria-label="Quick filters">
+    <a class="fchip {% if not mode and not free and not soon and not level %}on{% endif %}" href="?{% qs_replace mode='' free='' soon='' level='' page='' %}">All</a>
+    <a class="fchip {% if mode == 'live' %}on{% endif %}" href="?{% if mode == 'live' %}{% qs_replace mode='' page='' %}{% else %}{% qs_replace mode='live' page='' %}{% endif %}" aria-pressed="{% if mode == 'live' %}true{% else %}false{% endif %}"><i class="bi bi-broadcast" aria-hidden="true"></i> Live</a>
+    <a class="fchip {% if mode == 'recorded' %}on{% endif %}" href="?{% if mode == 'recorded' %}{% qs_replace mode='' page='' %}{% else %}{% qs_replace mode='recorded' page='' %}{% endif %}" aria-pressed="{% if mode == 'recorded' %}true{% else %}false{% endif %}"><i class="bi bi-play-circle" aria-hidden="true"></i> Self-paced</a>
+    <a class="fchip {% if mode == 'hybrid' %}on{% endif %}" href="?{% if mode == 'hybrid' %}{% qs_replace mode='' page='' %}{% else %}{% qs_replace mode='hybrid' page='' %}{% endif %}" aria-pressed="{% if mode == 'hybrid' %}true{% else %}false{% endif %}">Live + recorded</a>
+    <a class="fchip {% if level == 'beginner' %}on{% endif %}" href="?{% if level == 'beginner' %}{% qs_replace level='' page='' %}{% else %}{% qs_replace level='beginner' page='' %}{% endif %}" aria-pressed="{% if level == 'beginner' %}true{% else %}false{% endif %}">Beginner</a>
+    <a class="fchip {% if level == 'advanced' %}on{% endif %}" href="?{% if level == 'advanced' %}{% qs_replace level='' page='' %}{% else %}{% qs_replace level='advanced' page='' %}{% endif %}" aria-pressed="{% if level == 'advanced' %}true{% else %}false{% endif %}">Advanced</a>
+    <a class="fchip {% if free %}on{% endif %}" href="?{% if free %}{% qs_replace free='' page='' %}{% else %}{% qs_replace free='1' page='' %}{% endif %}" aria-pressed="{% if free %}true{% else %}false{% endif %}"><i class="bi bi-gift" aria-hidden="true"></i> Free</a>
+    <a class="fchip {% if soon %}on{% endif %}" href="?{% if soon %}{% qs_replace soon='' page='' %}{% else %}{% qs_replace soon='1' page='' %}{% endif %}" aria-pressed="{% if soon %}true{% else %}false{% endif %}"><i class="bi bi-calendar-check" aria-hidden="true"></i> Batch starting soon</a>
+  </div>
   {% if page.object_list %}
   <div class="row g-4">
     {% for course in page.object_list %}<div class="col-sm-6 col-lg-4">{% include "partials/course_card.html" %}</div>{% endfor %}

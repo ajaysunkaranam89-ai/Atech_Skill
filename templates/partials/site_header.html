@@ -44,6 +44,7 @@
         {% if user.is_authenticated %}<li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'portal' %}active{% endif %}" href="{% url 'portal:dashboard' %}">My Learning</a></li>{% endif %}
       </ul>
       <ul class="navbar-nav align-items-lg-center gap-lg-2">
+        <li class="nav-item"><button type="button" class="nav-link btn btn-link" data-theme-toggle aria-label="Switch dark / light mode" title="Dark / light mode"><i class="bi bi-moon-stars fs-5"></i></button></li>
         {% if user.is_authenticated %}
           {% if user.is_academy_staff %}<li class="nav-item"><a class="btn btn-sm btn-outline-cyan" href="{% url 'dashboard:overview' %}"><i class="bi bi-speedometer2 me-1"></i>Admin</a></li>{% endif %}
           <li class="nav-item"><a class="nav-link position-relative" href="{% url 'notifications:inbox' %}" aria-label="Notifications"><i class="bi bi-bell fs-5"></i>{% if unread_notifications %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info text-dark">{{ unread_notifications }}</span>{% endif %}</a></li>
