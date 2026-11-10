@@ -27,7 +27,7 @@
       <div class="col-lg-5">
         <div class="hero-logo-card mb-4"><img src="{% static 'img/logo-full.png' %}" alt="{{ academy.site_name }}" class="img-fluid" width="1200" height="287"></div>
         <div class="row g-3">
-          <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan">{{ course_count }}</div><div class="small">Published courses</div></div></div>
+          <div class="col-6">{% if course_count %}<div class="stat-pill"><div class="fs-3 fw-bold text-cyan">{{ course_count }}</div><div class="small">Industry-focused course{{ course_count|pluralize }}</div></div>{% else %}<div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-person-workspace"></i></div><div class="small">Expert practitioner trainers</div></div>{% endif %}</div>
           <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-camera-video"></i></div><div class="small">Live Google Meet classes</div></div></div>
           <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-collection-play"></i></div><div class="small">Recorded lessons to rewatch</div></div></div>
           <div class="col-6"><div class="stat-pill"><div class="fs-3 fw-bold text-cyan"><i class="bi bi-award"></i></div><div class="small">Verifiable certificates</div></div></div>
