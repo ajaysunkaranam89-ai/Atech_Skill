@@ -24,7 +24,7 @@ class StaticSitemap(_Base):
     changefreq = "weekly"
 
     def items(self):
-        return ["core:home", "core:course_list", "core:about", "core:trainers", "core:contact",
+        return ["core:home", "core:course_list", "core:about", "core:trainers", "core:corporate", "core:contact",
                 "core:terms", "core:privacy", "core:refund"]
 
     def location(self, item):
@@ -163,4 +163,13 @@ def breadcrumb_ld(items):
         "@type": "BreadcrumbList",
         "itemListElement": [{"@type": "ListItem", "position": i, "name": name, "item": abs_url(url)}
                             for i, (name, url) in enumerate(items, start=1)],
+    }
+
+
+def faq_ld(faqs):
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [{"@type": "Question", "name": f.question,
+                        "acceptedAnswer": {"@type": "Answer", "text": f.answer}} for f in faqs],
     }

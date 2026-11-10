@@ -82,6 +82,26 @@ class SiteSettings(models.Model):
 
     footer_text = models.CharField(max_length=255, blank=True)
 
+    # Home page trust strip (shown only when filled; enter real figures only)
+    stat_students = models.CharField("Students trained", max_length=20, blank=True, help_text="e.g. 2,500+")
+    stat_years = models.CharField("Years of training", max_length=20, blank=True, help_text="e.g. 10+")
+    stat_batches = models.CharField("Batches completed", max_length=20, blank=True, help_text="e.g. 150+")
+    stat_placement = models.CharField("Placement / success rate", max_length=20, blank=True, help_text="e.g. 90%")
+    stat_rating = models.CharField("Average rating", max_length=20, blank=True, help_text="e.g. 4.8/5")
+    certification_paths = models.TextField(
+        blank=True, help_text="Certifications your courses prepare for, one per line (e.g. Cisco CCNA, AWS Solutions Architect)"
+    )
+    topbar_text = models.CharField(
+        "Top bar announcement", max_length=120, blank=True, help_text="Short message in the top bar, e.g. 'New AWS batch starts 1 Dec'"
+    )
+    corporate_intro = models.TextField(
+        "Corporate training intro", blank=True,
+        help_text="Shown on the Corporate Training page. Formatting: '## Heading', '* bullet'. Leave blank for the standard text.",
+    )
+    corporate_clients = models.TextField(
+        blank=True, help_text="Organisations you have trained, one per line (only with their permission)"
+    )
+
     # SEO & analytics
     seo_home_title = models.CharField(
         "Home page SEO title", max_length=70, blank=True,
@@ -177,7 +197,8 @@ class EnquiryStatus(models.TextChoices):
 class Enquiry(models.Model):
     """A lead captured from the public site (course page, contact page, demo request)."""
 
-    KIND_CHOICES = [("demo", "Free demo"), ("callback", "Call back"), ("question", "Question"), ("batch", "Batch timings")]
+    KIND_CHOICES = [("demo", "Free demo"), ("callback", "Call back"), ("question", "Question"), ("batch", "Batch timings"),
+                    ("corporate", "Corporate training proposal"), ("brochure", "Brochure download")]
 
     name = models.CharField(max_length=120)
     phone = models.CharField(max_length=20)
@@ -186,6 +207,10 @@ class Enquiry(models.Model):
     kind = models.CharField("I'm interested in", max_length=20, choices=KIND_CHOICES, default="demo")
     message = models.TextField(blank=True)
     preferred_time = models.CharField(max_length=60, blank=True)
+    company_name = models.CharField(max_length=150, blank=True)
+    designation = models.CharField(max_length=100, blank=True)
+    team_size = models.CharField(max_length=20, blank=True)
+    training_mode = models.CharField(max_length=30, blank=True)
     status = models.CharField(max_length=20, choices=EnquiryStatus.choices, default=EnquiryStatus.NEW, db_index=True)
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="assigned_enquiries"
@@ -253,3 +278,69 @@ class OutboundEmail(models.Model):
 
     def __str__(self):
         return f"{self.subject} -> {', '.join(self.to)}"
+
+
+class Testimonial(models.Model):
+    """Real student / client feedback, managed in Admin > Testimonials."""
+
+    name = models.CharField(max_length=120)
+    role = models.CharField("Role / designation", max_length=120, blank=True, help_text="e.g. Network Engineer")
+    company = models.CharField(max_length=120, blank=True)
+    photo = models.ImageField(upload_to="testimonials/", blank=True, validators=[validate_image_upload])
+    quote = models.TextField(max_length=800)
+    rating = models.PositiveSmallIntegerField(default=5, choices=[(i, f"{i} star{'s' if i > 1 else ''}") for i in range(5, 0, -1)])
+    course = models.ForeignKey("courses.Course", null=True, blank=True, on_delete=models.SET_NULL, related_name="testimonials")
+    is_published = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False, help_text="Show on the home page")
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "-created_at"]
+
+    def __str__(self):
+        return f"{self.name} ({self.company})" if self.company else self.name
+
+
+class FAQ(models.Model):
+    """Frequently asked questions: general (home/contact) or per course."""
+
+    question = models.CharField(max_length=255)
+    answer = models.TextField(help_text="Formatting: '* bullet', '**bold**'")
+    course = models.ForeignKey(
+        "courses.Course", null=True, blank=True, on_delete=models.CASCADE, related_name="faqs",
+        help_text="Leave blank for a general academy FAQ (home page)",
+    )
+    is_corporate = models.BooleanField(default=False, help_text="Show on the Corporate Training page")
+    is_published = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "FAQ"
+        verbose_name_plural = "FAQs"
+
+    def __str__(self):
+        return self.question
+
+
+class NewsletterSubscriber(models.Model):
+    email = models.EmailField(unique=True)
+    source_page = models.CharField(max_length=300, blank=True)
+    is_active = models.BooleanField(default=True)
+    unsubscribe_token = models.CharField(max_length=40, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.email
+
+    def save(self, *args, **kwargs):
+        if not self.unsubscribe_token:
+            import secrets
+
+            self.unsubscribe_token = secrets.token_urlsafe(24)
+        super().save(*args, **kwargs)

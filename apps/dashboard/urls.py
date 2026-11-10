@@ -88,6 +88,17 @@ urlpatterns = [
     path("notifications/<int:pk>/edit/", vo.AnnouncementUpdate.as_view(), name="announcement_edit"),
     path("notifications/<int:pk>/delete/", vo.AnnouncementDelete.as_view(), name="announcement_delete"),
     path("notifications/log/", vo.NotificationLog.as_view(), name="notification_log"),
+    # Website content
+    path("testimonials/", vo.TestimonialList.as_view(), name="testimonials"),
+    path("testimonials/add/", vo.TestimonialCreate.as_view(), name="testimonial_add"),
+    path("testimonials/<int:pk>/edit/", vo.TestimonialUpdate.as_view(), name="testimonial_edit"),
+    path("testimonials/<int:pk>/delete/", vo.TestimonialDelete.as_view(), name="testimonial_delete"),
+    path("faqs/", vo.FAQList.as_view(), name="faqs"),
+    path("faqs/add/", vo.FAQCreate.as_view(), name="faq_add"),
+    path("faqs/<int:pk>/edit/", vo.FAQUpdate.as_view(), name="faq_edit"),
+    path("faqs/<int:pk>/delete/", vo.FAQDelete.as_view(), name="faq_delete"),
+    path("newsletter/", vo.SubscriberList.as_view(), name="subscribers"),
+    path("newsletter/export/", vo.subscriber_export, name="subscriber_export"),
     # Leads
     path("enquiries/", vo.EnquiryList.as_view(), name="enquiries"),
     path("enquiries/export/", vo.enquiry_export, name="enquiry_export"),

@@ -24,6 +24,26 @@ def home(request):
         "course_count": published.count(),
         "structured_data": seo.organization_ld(SiteSettings.load(), static("img/logo-full.png")),
     }
+    from .models import FAQ, Testimonial
+
+    site = SiteSettings.load()
+    ctx["testimonials"] = Testimonial.objects.filter(is_published=True, is_featured=True).select_related("course")[:6]
+    ctx["faqs"] = list(FAQ.objects.filter(is_published=True, course__isnull=True)[:8])
+    ctx["cert_paths"] = [c.strip() for c in site.certification_paths.splitlines() if c.strip()]
+    ctx["stats"] = [(v, label) for v, label in [
+        (site.stat_students, "Students trained"), (site.stat_years, "Years of training"),
+        (site.stat_batches, "Batches completed"), (site.stat_placement, "Placement success"),
+        (site.stat_rating, "Average rating")] if v]
+    ctx["why_us"] = [
+        ("bi-person-video3", "Live classes with practitioners", "Learn from trainers who run enterprise networks, servers and cloud platforms every day."),
+        ("bi-terminal", "Hands-on labs", "Configure routers, servers, AWS and Kubernetes yourself - not just slides."),
+        ("bi-collection-play", "Recordings for every class", "Missed a session or need revision? Every lesson stays available in your portal."),
+        ("bi-patch-check", "Certification-focused", "Syllabus aligned to industry certifications, with practice questions and guidance."),
+        ("bi-briefcase", "Career support", "Resume tips, interview preparation and real-world scenarios that employers ask about."),
+        ("bi-award", "Verifiable certificates", "Every certificate has a QR code employers can scan to confirm it's genuine."),
+    ]
+    if ctx["faqs"]:
+        ctx["structured_data"] = [ctx["structured_data"], seo.faq_ld(ctx["faqs"])]
     return render(request, "core/home.html", ctx)
 
 
@@ -72,7 +92,12 @@ def course_detail(request, slug):
     if course.category:
         crumbs.append((course.category.name, reverse("core:course_list") + f"?category={course.category.slug}"))
     crumbs.append((course.title, course.get_absolute_url()))
+    from .models import FAQ, Testimonial
+
+    course_faqs = list(FAQ.objects.filter(is_published=True, course=course))
     ctx = {
+        "course_faqs": course_faqs,
+        "course_testimonials": Testimonial.objects.filter(is_published=True, course=course)[:4],
         "structured_data": [
             seo.course_ld(course, SiteSettings.load(), trainers, course.thumbnail.url if course.thumbnail else None),
             seo.breadcrumb_ld(crumbs),
@@ -229,5 +254,67 @@ def enquiry_submit(request):
         f"Source: {enq.source_label}\n\n{enq.message}",
         link=f"/dashboard/enquiries/{enq.pk}/", dedupe_key=f"enquiry:{enq.pk}",
     )
+    if enq.kind == "brochure" and enq.course:
+        from django.http import HttpResponse
+
+        from .pdf import brochure_pdf
+
+        resp = HttpResponse(brochure_pdf(enq.course, SiteSettings.load()), content_type="application/pdf")
+        resp["Content-Disposition"] = f'attachment; filename="{enq.course.slug}-brochure.pdf"'
+        return resp
     messages.success(request, f"Thank you, {enq.name.split()[0]}! Our team will contact you on {enq.phone} shortly.")
     return redirect((nxt or "/") + "#enquiry-thanks")
+
+
+
+def corporate_training(request):
+    from .forms import EnquiryForm
+    from .models import FAQ
+
+    site = SiteSettings.load()
+    return render(request, "core/corporate.html", {
+        "form": EnquiryForm(initial={"kind": "corporate"}, auto_id="corp_%s"),
+        "courses": Course.objects.published().select_related("category")[:12],
+        "clients": [c.strip() for c in site.corporate_clients.splitlines() if c.strip()],
+        "faqs": FAQ.objects.filter(is_published=True, is_corporate=True),
+    })
+
+
+def newsletter_subscribe(request):
+    from django.contrib import messages
+    from django.core.cache import cache
+    from django.shortcuts import redirect
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    from .audit import client_ip
+    from .forms import NewsletterForm
+    from .models import NewsletterSubscriber
+
+    nxt = request.POST.get("next", "/")
+    if not url_has_allowed_host_and_scheme(nxt, {request.get_host()}, request.is_secure()):
+        nxt = "/"
+    if request.method != "POST":
+        return redirect(nxt)
+    key = f"nl-rate:{client_ip(request)}"
+    form = NewsletterForm(request.POST)
+    if cache.get(key, 0) >= 5 or not form.is_valid() or form.cleaned_data.get("website"):
+        messages.error(request, "Please enter a valid email address.")
+        return redirect(nxt + "#newsletter")
+    cache.set(key, cache.get(key, 0) + 1, 3600)
+    sub, created = NewsletterSubscriber.objects.get_or_create(
+        email=form.cleaned_data["email"].lower(), defaults={"source_page": nxt[:300]})
+    if not sub.is_active:
+        sub.is_active = True
+        sub.save(update_fields=["is_active"])
+    messages.success(request, "Thanks for subscribing! You'll hear about new batches and free workshops first.")
+    return redirect(nxt + "#newsletter")
+
+
+def newsletter_unsubscribe(request, token):
+    from .models import NewsletterSubscriber
+
+    sub = NewsletterSubscriber.objects.filter(unsubscribe_token=token).first()
+    if sub and request.method == "POST":
+        sub.is_active = False
+        sub.save(update_fields=["is_active"])
+    return render(request, "core/unsubscribe.html", {"sub": sub, "done": request.method == "POST"})

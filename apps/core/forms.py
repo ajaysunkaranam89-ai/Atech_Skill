@@ -14,7 +14,8 @@ class EnquiryForm(BootstrapMixin, forms.ModelForm):
 
     class Meta:
         model = Enquiry
-        fields = ["name", "phone", "email", "course", "kind", "preferred_time", "message"]
+        fields = ["name", "phone", "email", "course", "kind", "preferred_time", "message",
+                  "company_name", "designation", "team_size", "training_mode"]
         widgets = {
             "message": forms.Textarea(attrs={"rows": 2, "placeholder": "Anything you'd like us to know (optional)"}),
             "preferred_time": forms.TextInput(attrs={"placeholder": "e.g. Weekdays after 6 PM"}),
@@ -29,6 +30,8 @@ class EnquiryForm(BootstrapMixin, forms.ModelForm):
         self.fields["course"].queryset = Course.objects.filter(status=CourseStatus.PUBLISHED).order_by("title")
         self.fields["course"].required = False
         self.fields["course"].empty_label = "Not sure yet – help me choose"
+        self.fields["kind"].choices = [c for c in self.fields["kind"].choices if c[0] not in ("corporate", "brochure")] \
+            if not self.data or self.data.get("kind") not in ("corporate", "brochure") else self.fields["kind"].choices
         self._bootstrap()
 
     def clean_phone(self):
@@ -44,3 +47,8 @@ class EnquiryForm(BootstrapMixin, forms.ModelForm):
         if self.cleaned_data.get("website"):
             raise forms.ValidationError("Spam detected.")
         return ""
+
+
+class NewsletterForm(forms.Form):
+    email = forms.EmailField(widget=forms.EmailInput(attrs={"placeholder": "Your email", "class": "form-control", "autocomplete": "email"}))
+    website = forms.CharField(required=False)  # honeypot

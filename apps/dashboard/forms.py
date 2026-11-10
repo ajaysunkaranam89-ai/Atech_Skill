@@ -504,6 +504,9 @@ class SiteSettingsForm(StyledModelForm):
         ("Branding", ["site_name", "tagline", "hero_title", "hero_subtitle", "about_text", "logo", "footer_text"]),
         ("Contact details", ["legal_business_name", "contact_email", "contact_phone", "whatsapp_number", "address"]),
         ("Social links", ["facebook_url", "instagram_url", "linkedin_url", "youtube_url"]),
+        ("Home page trust strip (real figures only; blank = hidden)",
+         ["stat_students", "stat_years", "stat_batches", "stat_placement", "stat_rating", "certification_paths", "topbar_text"]),
+        ("Corporate training page", ["corporate_intro", "corporate_clients"]),
         ("SEO & analytics", ["seo_home_title", "seo_home_description", "city", "google_site_verification", "google_analytics_id"]),
         ("Payments", ["razorpay_enabled", "upi_enabled", "upi_id", "upi_payee_name", "upi_qr_code", "upi_instructions"]),
         ("Invoices & GST", ["invoice_mode", "gstin", "business_state", "gst_rate", "sac_code", "invoice_prefix"]),
@@ -526,3 +529,28 @@ class EnquiryUpdateForm(StyledModelForm):
     def limit_querysets(self):
         self.fields["assigned_to"].queryset = User.objects.filter(is_active=True).exclude(role=Role.STUDENT)
         self.fields["course"].required = False
+
+
+class TestimonialForm(StyledModelForm):
+    class Meta:
+        from apps.core.models import Testimonial
+
+        model = Testimonial
+        fields = ["name", "role", "company", "photo", "quote", "rating", "course", "is_featured", "is_published", "order"]
+        widgets = {"quote": forms.Textarea(attrs={"rows": 4})}
+
+    def limit_querysets(self):
+        self.fields["course"].required = False
+
+
+class FAQForm(StyledModelForm):
+    class Meta:
+        from apps.core.models import FAQ
+
+        model = FAQ
+        fields = ["question", "answer", "course", "is_corporate", "is_published", "order"]
+        widgets = {"answer": forms.Textarea(attrs={"rows": 4})}
+
+    def limit_querysets(self):
+        self.fields["course"].required = False
+        self.fields["course"].empty_label = "General (home page)"

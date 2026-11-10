@@ -1,0 +1,47 @@
+{% load lms %}
+{% if testimonials %}
+<section class="section-band-light py-5 reveal">
+  <div class="container">
+    <div class="text-center mb-4"><span class="eyebrow">Student stories</span><h2 class="section-title mt-1">What our learners say</h2></div>
+    <div class="row g-4">
+      {% for t in testimonials %}
+      <div class="col-md-6 col-lg-4">
+        <figure class="card testimonial-card h-100 p-4 mb-0">
+          <div class="text-warning mb-2" aria-label="{{ t.rating }} out of 5">{% for i in "12345"|make_list %}{% if forloop.counter <= t.rating %}<i class="bi bi-star-fill"></i>{% else %}<i class="bi bi-star"></i>{% endif %}{% endfor %}</div>
+          <blockquote class="mb-3">“{{ t.quote }}”</blockquote>
+          <figcaption class="d-flex align-items-center gap-3 mt-auto">
+            {% if t.photo %}<img src="{{ t.photo.url }}" alt="" width="48" height="48" class="rounded-circle object-fit-cover" loading="lazy">{% else %}<span class="avatar-initials">{{ t.name|slice:":1" }}</span>{% endif %}
+            <div><div class="fw-semibold text-navy">{{ t.name }}</div><div class="small text-muted">{{ t.role }}{% if t.role and t.company %} · {% endif %}{{ t.company }}{% if t.course %}<br>{{ t.course.title }}{% endif %}</div></div>
+          </figcaption>
+        </figure>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="container py-5 reveal">
+  <div class="text-center mb-4"><span class="eyebrow">Why {{ academy.site_name }}</span><h2 class="section-title mt-1">Training built for real IT jobs</h2></div>
+  <div class="row g-4">
+    {% for icon, title, text in why_us %}
+    <div class="col-sm-6 col-lg-4"><div class="feature-card h-100"><div class="feature-icon"><i class="bi {{ icon }}"></i></div><h3 class="h6 fw-bold text-navy mt-3">{{ title }}</h3><p class="small text-muted mb-0">{{ text }}</p></div></div>
+    {% endfor %}
+  </div>
+</section>
+
+{% if faqs %}
+<section class="section-band-light py-5 reveal" id="faq">
+  <div class="container" style="max-width:900px">
+    <div class="text-center mb-4"><span class="eyebrow">FAQ</span><h2 class="section-title mt-1">Frequently asked questions</h2></div>
+    <div class="accordion faq-accordion" id="faqAcc">
+      {% for f in faqs %}
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#faq{{ f.pk }}">{{ f.question }}</button></h3>
+        <div id="faq{{ f.pk }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#faqAcc"><div class="accordion-body">{{ f.answer|rich_text }}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}

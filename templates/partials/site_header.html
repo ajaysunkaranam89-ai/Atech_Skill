@@ -1,0 +1,69 @@
+{% load static %}
+<div class="topbar small d-none d-md-block">
+  <div class="container d-flex align-items-center gap-4 py-1">
+    {% if academy.contact_phone %}<a href="tel:{{ academy.contact_phone|cut:' ' }}"><i class="bi bi-telephone me-1"></i>{{ academy.contact_phone }}</a>{% endif %}
+    {% if academy.contact_email %}<a href="mailto:{{ academy.contact_email }}"><i class="bi bi-envelope me-1"></i>{{ academy.contact_email }}</a>{% endif %}
+    {% if academy.topbar_text %}<span class="topbar-note"><i class="bi bi-megaphone me-1"></i>{{ academy.topbar_text }}</span>{% endif %}
+    <span class="ms-auto d-flex gap-3">
+      <a href="{% url 'core:corporate' %}"><i class="bi bi-building me-1"></i>Corporate training</a>
+      <a href="{% url 'core:enquiry' %}"><i class="bi bi-calendar-check me-1"></i>Free demo</a>
+    </span>
+  </div>
+</div>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-ts sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'core:home' %}">
+      {% if academy.logo %}<img src="{{ academy.logo.url }}" alt="{{ academy.site_name }}" class="brand-logo">{% else %}<img src="{% static 'img/logo-dark.png' %}" alt="{{ academy.site_name }}" class="brand-logo" width="146" height="53">{% endif %}
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav me-auto ms-lg-4">
+        <li class="nav-item dropdown mega">
+          <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name in 'course_list course_detail' %}active{% endif %}" href="{% url 'core:course_list' %}" data-bs-toggle="dropdown" aria-expanded="false">Courses</a>
+          <div class="dropdown-menu mega-menu shadow-lg">
+            <div class="container-fluid p-3 p-lg-4">
+              <div class="row g-4">
+                {% for cat in menu_categories %}
+                <div class="col-sm-6 col-lg-3">
+                  <a class="mega-title" href="{% url 'core:course_list' %}{% if cat.slug %}?category={{ cat.slug }}{% endif %}"><i class="bi {{ cat.icon|default:'bi-grid' }} me-1"></i>{{ cat.name }}</a>
+                  <ul class="list-unstyled mb-0">{% for c in cat.courses %}<li><a class="mega-link" href="{% url 'core:course_detail' c.slug %}">{{ c.title }}</a></li>{% endfor %}</ul>
+                </div>
+                {% empty %}<div class="col-12 small text-muted">Courses will be listed here soon.</div>{% endfor %}
+              </div>
+              <div class="mega-footer d-flex flex-wrap gap-2 align-items-center mt-3 pt-3">
+                <a href="{% url 'core:course_list' %}" class="btn btn-sm btn-primary">View all courses</a>
+                <a href="{% url 'core:enquiry' %}" class="btn btn-sm btn-outline-primary">Not sure? Talk to an advisor</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'corporate' %}active{% endif %}" href="{% url 'core:corporate' %}">Corporate</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name in 'trainers trainer_detail' %}active{% endif %}" href="{% url 'core:trainers' %}">Trainers</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'core:about' %}">About</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'core:contact' %}">Contact</a></li>
+        {% if user.is_authenticated %}<li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'portal' %}active{% endif %}" href="{% url 'portal:dashboard' %}">My Learning</a></li>{% endif %}
+      </ul>
+      <ul class="navbar-nav align-items-lg-center gap-lg-2">
+        {% if user.is_authenticated %}
+          {% if user.is_academy_staff %}<li class="nav-item"><a class="btn btn-sm btn-outline-cyan" href="{% url 'dashboard:overview' %}"><i class="bi bi-speedometer2 me-1"></i>Admin</a></li>{% endif %}
+          <li class="nav-item"><a class="nav-link position-relative" href="{% url 'notifications:inbox' %}" aria-label="Notifications"><i class="bi bi-bell fs-5"></i>{% if unread_notifications %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info text-dark">{{ unread_notifications }}</span>{% endif %}</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{ user.display_name }}</a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'portal:dashboard' %}"><i class="bi bi-grid me-2"></i>Dashboard</a></li>
+              <li><a class="dropdown-item" href="{% url 'portal:assignments' %}"><i class="bi bi-journal-check me-2"></i>Assignments</a></li>
+              <li><a class="dropdown-item" href="{% url 'portal:certificates' %}"><i class="bi bi-award me-2"></i>Certificates</a></li>
+              <li><a class="dropdown-item" href="{% url 'portal:payments' %}"><i class="bi bi-receipt me-2"></i>Payments</a></li>
+              <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Log out</button></form></li>
+            </ul>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Log in</a></li>
+          <li class="nav-item"><a class="btn btn-cyan btn-sm px-3" href="{% url 'core:enquiry' %}"><i class="bi bi-calendar-check me-1"></i>Book free demo</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -268,3 +268,78 @@ def invoice_pdf(inv, amount_words):
         story.append(p(n, small))
     doc.build(story)
     return buf.getvalue()
+
+
+# ------------------------------------------------------------------ course brochure
+def brochure_pdf(course, site):
+    from django.conf import settings as dj
+
+    from apps.courses.access import student_outline
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=14 * mm,
+                            bottomMargin=16 * mm, title=f"{course.title} – brochure", author=site.site_name)
+    base = ParagraphStyle("b", fontName="Helvetica", fontSize=10, leading=14)
+    small = ParagraphStyle("s", parent=base, fontSize=8.5, leading=11.5, textColor=MUTED)
+    h1 = ParagraphStyle("h1", parent=base, fontName="Helvetica-Bold", fontSize=22, leading=27, textColor=NAVY)
+    h2 = ParagraphStyle("h2", parent=base, fontName="Helvetica-Bold", fontSize=13, leading=17, textColor=NAVY, spaceBefore=10, spaceAfter=4)
+    bullet = ParagraphStyle("li", parent=base, leftIndent=12, bulletIndent=2)
+
+    from django.utils.html import escape
+
+    def p(t, s=base):
+        return Paragraph(escape(t or "").replace("\n", "<br/>"), s)
+
+    story = []
+    if LOGO.exists():
+        img = Image(str(LOGO))
+        img.drawWidth = 60 * mm
+        img.drawHeight = 60 * mm * img.imageHeight / img.imageWidth
+        img.hAlign = "LEFT"
+        story += [img, Spacer(1, 8)]
+    story += [p(course.title, h1), p(course.short_description, ParagraphStyle("lead", parent=base, fontSize=11.5, leading=16, textColor=MUTED)), Spacer(1, 8)]
+
+    facts = [["Duration", course.duration_text or (f"{course.duration_hours} hours" if course.duration_hours else "—")],
+             ["Level", course.get_level_display()], ["Mode", course.get_mode_display()], ["Language", course.language],
+             ["Fee", "Free" if course.is_free else money(course.effective_price)],
+             ["Certificate", "Yes, verifiable online" if course.certificate_enabled else "—"]]
+    ft = Table(facts, colWidths=[38 * mm, 136 * mm])
+    ft.setStyle(TableStyle([("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"), ("TEXTCOLOR", (0, 0), (0, -1), NAVY),
+                            ("FONTSIZE", (0, 0), (-1, -1), 10), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f4f7fb")),
+                            ("LINEBELOW", (0, 0), (-1, -2), 0.4, colors.HexColor("#dbe3ee")),
+                            ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+    story.append(ft)
+
+    def bullets(title, items):
+        if items:
+            story.append(p(title, h2))
+            story.extend(Paragraph(escape(i), bullet, bulletText="•") for i in items)
+
+    bullets("What you'll learn", course.objectives_list)
+    outline = student_outline(course)
+    if outline:
+        story.append(p("Curriculum", h2))
+        for i, m in enumerate(outline, 1):
+            story.append(Paragraph(f"<b>Module {i}: {escape(m.title)}</b>", base))
+            for lesson in m.visible_lessons:
+                story.append(Paragraph(escape(lesson.title), bullet, bulletText="–"))
+    else:
+        bullets("Syllabus", course.syllabus_list)
+    bullets("Prerequisites", course.prerequisites_list)
+    bullets("Who should join", course.audience_list)
+    trainers = list(course.trainers.filter(is_public=True).select_related("user"))
+    if trainers:
+        story.append(p("Your trainer" + ("s" if len(trainers) > 1 else ""), h2))
+        for t in trainers:
+            line = t.user.get_full_name() + (f" – {t.designation}" if t.designation else "")
+            if t.experience_years:
+                line += f" ({t.experience_years}+ years)"
+            story.append(p(line))
+    story += [Spacer(1, 12), p("Enroll / book a free demo", h2),
+              p(f"{dj.SITE_URL}{course.get_absolute_url()}")]
+    contact = " · ".join(x for x in [site.contact_phone, site.contact_email] if x)
+    if contact:
+        story.append(p(contact))
+    story += [Spacer(1, 10), p(f"{site.site_name} – {site.tagline}. Fees and schedules may change; see the website for current details.", small)]
+    doc.build(story)
+    return buf.getvalue()

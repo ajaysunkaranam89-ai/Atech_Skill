@@ -793,3 +793,153 @@ def email_retry(request, pk):
     audit.log(request, "email_retry", object_type="outboundemail", object_repr=f"{n} email(s)")
     messages.success(request, f"{n} email(s) queued for another attempt.")
     return redirect("dashboard:email_outbox")
+
+
+# --------------------------------------------------------------------- testimonials, FAQs, newsletter
+from apps.core.models import FAQ, NewsletterSubscriber, Testimonial  # noqa: E402
+
+from .forms import FAQForm, TestimonialForm  # noqa: E402
+
+
+class TestimonialList(ManageListView):
+    capability = "content"
+    section = "website"
+    model = Testimonial
+    title = "Testimonials"
+    search_fields = ["name", "company", "quote"]
+    filters = [("is_published", "Published", [("true", "Published"), ("false", "Hidden")]),
+               ("is_featured", "On home page", [("true", "Yes"), ("false", "No")])]
+    sort_options = {"order": ("Display order", ["order", "-created_at"]), "-created": ("Newest", "-created_at")}
+    default_sort = "order"
+    create_url = "dashboard:testimonial_add"
+    create_label = "Add testimonial"
+    edit_url = "dashboard:testimonial_edit"
+    delete_url = "dashboard:testimonial_delete"
+
+    def base_queryset(self):
+        return Testimonial.objects.select_related("course")
+
+    def columns(self):
+        return ["Person", "Quote", "Rating", "Course", "Home page", "Published"]
+
+    def row(self, o):
+        who = format_html("<strong>{}</strong><div class='small text-muted'>{}</div>", o.name,
+                          " · ".join(x for x in [o.role, o.company] if x))
+        return [who, o.quote[:90] + ("…" if len(o.quote) > 90 else ""), "★" * o.rating,
+                o.course.title if o.course else "—", badge(o.is_featured), badge(o.is_published)]
+
+
+class TestimonialCreate(ManageCreateView):
+    capability = "content"
+    section = "website"
+    model = Testimonial
+    form_class = TestimonialForm
+    success_url_name = "dashboard:testimonials"
+
+
+class TestimonialUpdate(ManageUpdateView):
+    capability = "content"
+    section = "website"
+    model = Testimonial
+    form_class = TestimonialForm
+    success_url_name = "dashboard:testimonials"
+
+
+class TestimonialDelete(ManageDeleteView):
+    capability = "content"
+    section = "website"
+    model = Testimonial
+    success_url_name = "dashboard:testimonials"
+
+
+class FAQList(ManageListView):
+    capability = "content"
+    section = "website"
+    model = FAQ
+    title = "FAQs"
+    search_fields = ["question", "answer"]
+    filters = [("course_id", "Course", lambda v: [(c.pk, c.title) for c in Course.objects.all()]),
+               ("is_corporate", "Corporate page", [("true", "Yes"), ("false", "No")])]
+    sort_options = {"order": ("Display order", ["order", "id"])}
+    default_sort = "order"
+    create_url = "dashboard:faq_add"
+    create_label = "Add FAQ"
+    edit_url = "dashboard:faq_edit"
+    delete_url = "dashboard:faq_delete"
+
+    def base_queryset(self):
+        return FAQ.objects.select_related("course")
+
+    def columns(self):
+        return ["Question", "Shown on", "Order", "Published"]
+
+    def row(self, o):
+        where = o.course.title if o.course else ("Corporate page" if o.is_corporate else "Home page")
+        if o.course is None and o.is_corporate:
+            where = "Home + Corporate"
+        return [o.question, where, o.order, badge(o.is_published)]
+
+
+class FAQCreate(ManageCreateView):
+    capability = "content"
+    section = "website"
+    model = FAQ
+    form_class = FAQForm
+    success_url_name = "dashboard:faqs"
+
+
+class FAQUpdate(ManageUpdateView):
+    capability = "content"
+    section = "website"
+    model = FAQ
+    form_class = FAQForm
+    success_url_name = "dashboard:faqs"
+
+
+class FAQDelete(ManageDeleteView):
+    capability = "content"
+    section = "website"
+    model = FAQ
+    success_url_name = "dashboard:faqs"
+
+
+class SubscriberList(ManageListView):
+    capability = "content"
+    section = "website"
+    model = NewsletterSubscriber
+    title = "Newsletter subscribers"
+    search_fields = ["email"]
+    filters = [("is_active", "Status", [("true", "Subscribed"), ("false", "Unsubscribed")])]
+    sort_options = {"-created": ("Newest", "-created_at")}
+    default_sort = "-created"
+    paginate_by = 50
+
+    def base_queryset(self):
+        return NewsletterSubscriber.objects.all()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["extra_buttons"] = [("Export CSV", reverse("dashboard:subscriber_export"), "download")]
+        return ctx
+
+    def columns(self):
+        return ["Email", "Subscribed", "Signed up on page", "Status"]
+
+    def row(self, o):
+        return [o.email, timezone.localtime(o.created_at).strftime("%d %b %Y"), o.source_page or "—",
+                badge(o.is_active, "Subscribed" if o.is_active else "Unsubscribed")]
+
+    def actions(self, o):
+        return []
+
+
+@staff_required("content")
+def subscriber_export(request):
+    resp = HttpResponse(content_type="text/csv")
+    resp["Content-Disposition"] = 'attachment; filename="newsletter_subscribers.csv"'
+    w = csv.writer(resp)
+    w.writerow(["email", "subscribed_on", "source_page"])
+    for s in NewsletterSubscriber.objects.filter(is_active=True).order_by("created_at"):
+        w.writerow([s.email, timezone.localtime(s.created_at).date().isoformat(), s.source_page])
+    audit.log(request, "export", object_type="newsletter")
+    return resp

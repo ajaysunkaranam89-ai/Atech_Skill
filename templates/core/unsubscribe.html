@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Unsubscribe{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width:560px">
+  <div class="card card-body p-4 text-center">
+    {% if not sub %}<p class="mb-0">This unsubscribe link is not valid.</p>
+    {% elif done or not sub.is_active %}<i class="bi bi-check-circle text-success fs-1"></i><p class="mt-2 mb-0">{{ sub.email }} has been unsubscribed. Sorry to see you go!</p>
+    {% else %}
+      <p>Stop receiving updates at <strong>{{ sub.email }}</strong>?</p>
+      <form method="post">{% csrf_token %}<button class="btn btn-primary">Unsubscribe</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
