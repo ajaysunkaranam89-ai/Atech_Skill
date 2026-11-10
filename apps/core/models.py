@@ -51,7 +51,7 @@ class SiteSettings(models.Model):
     )
     about_text = models.TextField(blank=True)
     logo = models.ImageField(upload_to="site/", blank=True, validators=[validate_image_upload])
-    contact_email = models.EmailField(blank=True)
+    contact_email = models.EmailField(blank=True, default="info@atechskills.in")
     contact_phone = models.CharField(max_length=30, blank=True)
     whatsapp_number = models.CharField(max_length=30, blank=True)
     address = models.TextField(blank=True)

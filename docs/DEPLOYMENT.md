@@ -65,10 +65,10 @@ Open `http://your-domain/accounts/login/`, log in as the Super Admin, **change t
 ```bash
 mkdir -p nginx/certs nginx/certbot-www
 docker run --rm -v "$PWD/nginx/certs:/etc/letsencrypt" -v "$PWD/nginx/certbot-www:/var/www/certbot" \
-  certbot/certbot certonly --webroot -w /var/www/certbot -d academy.example.com -d www.academy.example.com \
+  certbot/certbot certonly --webroot -w /var/www/certbot -d atechskills.in -d www.atechskills.in \
   --email you@example.com --agree-tos --no-eff-email
 cp nginx/ssl.conf.example nginx/conf.d/default.conf
-sed -i 's/academy.example.com/YOUR_DOMAIN/g' nginx/conf.d/default.conf
+sed -i 's/atechskills.in/YOUR_DOMAIN/g' nginx/conf.d/default.conf
 ```
 In `.env`: `HTTPS_ENABLED=1`, `SITE_URL=https://YOUR_DOMAIN`, `DJANGO_CSRF_TRUSTED_ORIGINS=https://YOUR_DOMAIN`, then:
 ```bash
