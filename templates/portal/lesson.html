@@ -9,7 +9,7 @@
       <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-2">
         <li class="breadcrumb-item"><a href="{% if enrolled or is_manager %}{% url 'portal:course_home' course.slug %}{% else %}{{ course.get_absolute_url }}{% endif %}">{{ course.title }}</a></li>
         <li class="breadcrumb-item">{{ lesson.module.title }}</li></ol></nav>
-      {% include "partials/video_player.html" %}
+      {% include "partials/video_player.html" with watermark=watermark %}
       <div class="d-flex flex-wrap align-items-start gap-2 mt-3">
         <div class="me-auto">
           <h1 class="h4 mb-1 text-navy">{{ lesson.title }}</h1>

@@ -242,3 +242,13 @@ a.kpi:hover { box-shadow: var(--ts-shadow); transform: translateY(-2px); }
 .cal-date strong { display: block; font-size: 1.3rem; color: var(--ts-navy); padding-top: .15rem; }
 .cal-date small { display: block; font-size: .65rem; color: var(--ts-muted); padding-bottom: .2rem; }
 .cal-date.live span { background: #198754; }
+
+/* ---------- video: watermark, fullscreen, resume ---------- */
+.player-wrap { position: relative; }
+.player-wrap:fullscreen { border-radius: 0; aspect-ratio: auto; width: 100vw; height: 100vh; }
+.watermark { position: absolute; z-index: 3; pointer-events: none; user-select: none; color: rgba(255,255,255,.38); font-size: clamp(.7rem, .55rem + .5vw, 1rem);
+  font-weight: 600; text-shadow: 0 0 3px rgba(0,0,0,.55); transition: top 1.2s ease, left 1.2s ease; white-space: nowrap; }
+.player-fs { position: absolute; z-index: 4; right: .6rem; top: .6rem; border: 0; border-radius: .5rem; background: rgba(0,0,0,.55); color: #fff; width: 2.3rem; height: 2.3rem;
+  opacity: .75; transition: opacity .15s; }
+.player-fs:hover, .player-fs:focus-visible { opacity: 1; }
+.resume-note { position: absolute; z-index: 4; left: .8rem; bottom: 3.6rem; background: rgba(0,15,47,.85); color: #fff; padding: .35rem .7rem; border-radius: .5rem; font-size: .85rem; }

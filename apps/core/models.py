@@ -344,3 +344,21 @@ class NewsletterSubscriber(models.Model):
 
             self.unsubscribe_token = secrets.token_urlsafe(24)
         super().save(*args, **kwargs)
+
+
+class WhyChooseItem(models.Model):
+    """Cards in the home page "Why choose us" section (Admin > Why choose us)."""
+
+    icon = models.CharField(max_length=40, default="bi-check2-circle",
+                            help_text="Bootstrap icon name, e.g. bi-terminal, bi-award (see icons.getbootstrap.com)")
+    title = models.CharField(max_length=80)
+    text = models.CharField(max_length=220)
+    order = models.PositiveIntegerField(default=0)
+    is_published = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "Why choose us item"
+
+    def __str__(self):
+        return self.title

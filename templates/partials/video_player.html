@@ -1,20 +1,23 @@
-{# expects: video (VideoAsset or None) #}
-<div class="player-wrap">
+{% load lms %}{# expects: video (VideoAsset or None); optional: progress (LessonProgress) + lesson to enable resume/auto-complete; watermark (text) #}
+<div class="player-wrap"{% if progress and video %} data-progress-url="{% url 'api_lesson_position' lesson.pk %}" data-resume="{{ progress.position_seconds }}" data-completed="{% if progress.completed %}1{% else %}0{% endif %}"{% endif %}>
   {% if video %}
     {% if video.embed_url %}
-      <iframe src="{{ video.embed_url }}" title="{{ video.title }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      <iframe src="{{ video.embed_url }}" data-yt="1" title="{{ video.title }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin"></iframe>
     {% elif video.is_file %}
       {% if video.video_file %}
-      <video controls controlslist="nodownload" preload="metadata" {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %} oncontextmenu="return false;">
+      <video controls controlslist="nodownload nofullscreen" disablepictureinpicture preload="metadata" {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %} oncontextmenu="return false;">
         <source src="{{ video.stream_url }}" type="video/mp4">
         Your browser does not support HTML5 video.
       </video>
       {% else %}<div class="player-empty"><div><i class="bi bi-exclamation-octagon fs-1"></i><p class="mt-2">The video file for this version is no longer stored.</p></div></div>{% endif %}
     {% else %}
-      <video controls controlslist="nodownload" preload="metadata" {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %}>
+      <video controls controlslist="nodownload nofullscreen" disablepictureinpicture preload="metadata" {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %}>
         <source src="{{ video.video_url }}">
       </video>
     {% endif %}
+    {% if watermark %}<div class="watermark" aria-hidden="true">{{ watermark }}</div>{% endif %}
+    <button type="button" class="player-fs" data-fullscreen title="Full screen" aria-label="Full screen"><i class="bi bi-arrows-fullscreen"></i></button>
+    {% if progress and progress.position_seconds > 5 and not progress.completed %}<div class="resume-note" data-resume-note>Resuming from {{ progress.position_seconds|resume_time }}</div>{% endif %}
   {% else %}
     <div class="player-empty"><div><i class="bi bi-camera-video-off fs-1"></i><p class="mt-2 mb-0">The video for this lesson is not available yet.</p></div></div>
   {% endif %}

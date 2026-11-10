@@ -972,3 +972,60 @@ def subscriber_export(request):
         w.writerow([s.email, timezone.localtime(s.created_at).date().isoformat(), s.source_page])
     audit.log(request, "export", object_type="newsletter")
     return resp
+
+
+# --------------------------------------------------------------------- "Why choose us" cards
+from apps.core.models import WhyChooseItem  # noqa: E402
+
+from .forms import WhyChooseForm  # noqa: E402
+
+
+class WhyChooseList(ManageListView):
+    capability = "content"
+    section = "website"
+    model = WhyChooseItem
+    title = "Why choose us (home page)"
+    sort_options = {"order": ("Display order", ["order", "id"])}
+    default_sort = "order"
+    create_url = "dashboard:why_add"
+    create_label = "Add card"
+    edit_url = "dashboard:why_edit"
+    delete_url = "dashboard:why_delete"
+
+    def base_queryset(self):
+        return WhyChooseItem.objects.all()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if not WhyChooseItem.objects.exists():
+            ctx["summary_html"] = format_html("No cards yet, so the home page shows the 6 standard cards. Add your own to replace them.")
+        return ctx
+
+    def columns(self):
+        return ["Icon", "Title", "Text", "Order", "Published"]
+
+    def row(self, o):
+        return [format_html('<i class="bi {} fs-4 text-cyan"></i>', o.icon), o.title, o.text, o.order, badge(o.is_published)]
+
+
+class WhyChooseCreate(ManageCreateView):
+    capability = "content"
+    section = "website"
+    model = WhyChooseItem
+    form_class = WhyChooseForm
+    success_url_name = "dashboard:why"
+
+
+class WhyChooseUpdate(ManageUpdateView):
+    capability = "content"
+    section = "website"
+    model = WhyChooseItem
+    form_class = WhyChooseForm
+    success_url_name = "dashboard:why"
+
+
+class WhyChooseDelete(ManageDeleteView):
+    capability = "content"
+    section = "website"
+    model = WhyChooseItem
+    success_url_name = "dashboard:why"

@@ -152,3 +152,58 @@ class PortalPhase4Tests(LMSTestCase):
         self.assertIn("progress-ring", html)
         self.assertIn("calendar.google.com/calendar/render", html)
         self.assertIn("cal-date", html)
+
+
+class VideoExperienceTests(LMSTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = self.make_course()
+        m = self.make_module(self.course)
+        self.l1 = self.make_lesson(m, title="One")
+        self.l2 = self.make_lesson(m, title="Two")
+        self.enroll(self.student, self.course)
+        self.login(self.student)
+
+    def pos(self, lesson, position, duration=600):
+        return self.client.post(reverse("api_lesson_position", args=[lesson.pk]),
+                                {"position": position, "duration": duration}, content_type="application/json").json()
+
+    def test_resume_and_auto_complete_at_90_percent(self):
+        from apps.courses.models import LessonProgress
+
+        self.client.get(self.l1.get_absolute_url())
+        for t in range(0, 300, 10):
+            d = self.pos(self.l1, t)
+        self.assertFalse(d["completed"])
+        html = self.client.get(self.l1.get_absolute_url()).content.decode()
+        self.assertIn('data-resume="290"', html)
+        self.assertIn("Resuming from 4:50", html)
+        self.assertIn(self.student.email, html)  # watermark
+        for t in range(300, 560, 10):
+            d = self.pos(self.l1, t)
+        self.assertTrue(d["completed"])
+        self.assertEqual(d["progress"]["completed"], 1)
+        self.assertGreaterEqual(LessonProgress.objects.get(user=self.student, lesson=self.l1).watched_percent, 90)
+
+    def test_skipping_ahead_does_not_complete(self):
+        d = self.pos(self.l2, 590)
+        self.assertFalse(d["completed"])
+        self.assertEqual(d["watched_percent"], 0)
+
+    def test_outsider_blocked(self):
+        self.login(self.outsider)
+        r = self.client.post(reverse("api_lesson_position", args=[self.l1.pk]), {"position": 10, "duration": 60},
+                             content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+
+    def test_why_choose_us_editable(self):
+        from apps.core.models import WhyChooseItem
+
+        self.assertIn("Hands-on labs", self.client.get("/").content.decode())  # defaults
+        self.login(self.course_admin)
+        self.client.post(reverse("dashboard:why_add"), {"icon": "bi-cpu", "title": "Own lab servers",
+                                                        "text": "Real racks.", "order": 1, "is_published": "on"})
+        self.assertTrue(WhyChooseItem.objects.filter(title="Own lab servers").exists())
+        html = self.client.get("/").content.decode()
+        self.assertIn("Own lab servers", html)
+        self.assertNotIn("Hands-on labs", html)

@@ -176,7 +176,9 @@ def lesson(request, slug, pk):
     if request.user.is_authenticated and (enrolled or is_manager):
         progress, _ = LessonProgress.objects.get_or_create(user=request.user, lesson=lesson)
         if video and progress.watched_video_version != video.version:
+            # A new video version: start it from the beginning.
             progress.watched_video_version = video.version
+            progress.position_seconds = progress.furthest_seconds = progress.watched_percent = 0
         progress.save()  # bumps last_viewed_at
         done = set(LessonProgress.objects.filter(user=request.user, completed=True, lesson__module__course=course).values_list("lesson_id", flat=True))
     for x in sequence:
@@ -188,6 +190,7 @@ def lesson(request, slug, pk):
         "resources": resources, "enrolled": enrolled, "is_manager": is_manager,
         "course_progress": course_progress(request.user, course) if request.user.is_authenticated else None,
         "assignments": lesson.assignments.filter(is_published=True),
+        "watermark": (request.user.email + " · " + timezone.localdate().strftime("%d %b %Y")) if request.user.is_authenticated else "",
     })
 
 

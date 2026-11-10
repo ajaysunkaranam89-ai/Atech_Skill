@@ -187,3 +187,78 @@
   }, { rootMargin: "0px 0px -8% 0px" });
   els.forEach(function (e) { io.observe(e); });
 })();
+
+/* Video player: resume position, auto-complete at 90%, moving watermark, watermark-safe fullscreen. */
+(function () {
+  const wrap = document.querySelector(".player-wrap");
+  if (!wrap) return;
+  const fsBtn = wrap.querySelector("[data-fullscreen]");
+  if (fsBtn) fsBtn.addEventListener("click", function () {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (wrap.requestFullscreen) wrap.requestFullscreen();
+  });
+  const wm = wrap.querySelector(".watermark");
+  if (wm) {
+    const move = function () { wm.style.top = (8 + Math.random() * 72) + "%"; wm.style.left = (5 + Math.random() * 55) + "%"; };
+    move(); setInterval(move, 20000);
+  }
+  const note = wrap.querySelector("[data-resume-note]");
+  if (note) setTimeout(function () { note.remove(); }, 6000);
+  const url = wrap.dataset.progressUrl;
+  if (!url) return;
+  const resume = parseFloat(wrap.dataset.resume || "0");
+  let done = wrap.dataset.completed === "1", lastSent = 0;
+
+  function onSaved(d) {
+    if (!d || !d.newly_completed || done) return;
+    done = true;
+    const f = document.querySelector("form[data-complete-form]");
+    if (f) {
+      const b = f.querySelector("button"), i = f.querySelector("input[name=completed]");
+      b.className = "btn btn-success"; b.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Completed'; if (i) i.value = "0";
+      const icon = document.querySelector("[data-lesson-icon='" + f.dataset.lesson + "']");
+      if (icon) icon.className = "bi bi-check-circle-fill text-success";
+    }
+    document.querySelectorAll("[data-course-progress]").forEach(function (el) { el.style.width = d.progress.percent + "%"; });
+    document.querySelectorAll("[data-course-progress-label]").forEach(function (el) {
+      el.textContent = d.progress.percent + "% · " + d.progress.completed + "/" + d.progress.total + " lessons"; });
+    if (d.certificate_url) window.location.href = d.certificate_url;
+  }
+  function send(pos, dur, force) {
+    if (!dur || !isFinite(dur)) return;
+    const now = Date.now();
+    if (!force && now - lastSent < 10000) return;
+    lastSent = now;
+    fetch(url, { method: "POST", credentials: "same-origin", keepalive: true,
+      headers: { "Content-Type": "application/json", "X-CSRFToken": window.tsCsrf() },
+      body: JSON.stringify({ position: Math.floor(pos), duration: Math.floor(dur) }) })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(onSaved).catch(function () {});
+  }
+
+  const v = wrap.querySelector("video");
+  if (v) {
+    v.addEventListener("loadedmetadata", function () { if (resume > 5 && resume < v.duration - 10) v.currentTime = resume; });
+    v.addEventListener("timeupdate", function () { send(v.currentTime, v.duration); });
+    ["pause", "ended"].forEach(function (ev) { v.addEventListener(ev, function () { send(v.currentTime, v.duration, true); }); });
+    v.addEventListener("dblclick", function (e) { e.preventDefault(); });
+    return;
+  }
+  const yt = wrap.querySelector("iframe[data-yt]");
+  if (!yt) return;
+  let player = null;
+  function setup() {
+    player = new YT.Player(yt, { events: {
+      onReady: function (e) {
+        if (resume > 5) e.target.seekTo(resume, true);
+        setInterval(function () { if (e.target.getPlayerState() === 1) send(e.target.getCurrentTime(), e.target.getDuration()); }, 5000);
+      },
+      onStateChange: function (e) { if (e.data === 0 || e.data === 2) send(player.getCurrentTime(), player.getDuration(), true); }
+    } });
+  }
+  if (window.YT && window.YT.Player) setup();
+  else {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () { if (prev) prev(); setup(); };
+    const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
+  }
+})();

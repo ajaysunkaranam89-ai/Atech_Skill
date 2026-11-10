@@ -34,7 +34,10 @@ def home(request):
         (site.stat_students, "Students trained"), (site.stat_years, "Years of training"),
         (site.stat_batches, "Batches completed"), (site.stat_placement, "Placement success"),
         (site.stat_rating, "Average rating")] if v]
-    ctx["why_us"] = [
+    from .models import WhyChooseItem
+
+    custom = [(w.icon, w.title, w.text) for w in WhyChooseItem.objects.filter(is_published=True)]
+    ctx["why_us"] = custom or [
         ("bi-person-video3", "Live classes with practitioners", "Learn from trainers who run enterprise networks, servers and cloud platforms every day."),
         ("bi-terminal", "Hands-on labs", "Configure routers, servers, AWS and Kubernetes yourself - not just slides."),
         ("bi-collection-play", "Recordings for every class", "Missed a session or need revision? Every lesson stays available in your portal."),

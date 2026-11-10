@@ -408,7 +408,7 @@ class VideoAsset(TimeStampedModel):
     def embed_url(self):
         yid = self.youtube_id
         if yid:
-            return f"https://www.youtube-nocookie.com/embed/{yid}?rel=0&modestbranding=1"
+            return f"https://www.youtube-nocookie.com/embed/{yid}?rel=0&modestbranding=1&enablejsapi=1&fs=0&playsinline=1"
         return None
 
     @property
@@ -477,6 +477,9 @@ class LessonProgress(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     last_viewed_at = models.DateTimeField(auto_now=True)
     watched_video_version = models.PositiveIntegerField(default=0)
+    position_seconds = models.PositiveIntegerField(default=0, help_text="Where the student stopped (resume point)")
+    furthest_seconds = models.PositiveIntegerField(default=0, help_text="Furthest point reached by continuous watching")
+    watched_percent = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "lesson"], name="uniq_progress_user_lesson")]

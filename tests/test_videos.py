@@ -41,7 +41,7 @@ class RecordedVideoTests(LMSTestCase):
         lesson = Lesson.objects.get(title="Intro to Docker")
         self.assertEqual(lesson.status, ContentStatus.PUBLISHED)
         self.assertEqual(lesson.active_video.version, 1)
-        self.assertEqual(lesson.active_video.embed_url, "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1")
+        self.assertEqual(lesson.active_video.embed_url, "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1&enablejsapi=1&fs=0&playsinline=1")
 
     def test_admin_uploads_mp4_with_thumbnail_and_pdf(self):
         self.login(self.owner)

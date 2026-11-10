@@ -554,3 +554,11 @@ class FAQForm(StyledModelForm):
     def limit_querysets(self):
         self.fields["course"].required = False
         self.fields["course"].empty_label = "General (home page)"
+
+
+class WhyChooseForm(StyledModelForm):
+    class Meta:
+        from apps.core.models import WhyChooseItem
+
+        model = WhyChooseItem
+        fields = ["icon", "title", "text", "order", "is_published"]

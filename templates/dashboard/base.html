@@ -24,6 +24,7 @@
     <a class="nav-link {% if s == 'enquiries' %}active{% endif %}" href="{% url 'dashboard:enquiries' %}"><i class="bi bi-funnel"></i>Enquiries (leads){% if new_leads %} <span class="badge rounded-pill text-bg-info ms-auto">{{ new_leads }}</span>{% endif %}</a>
     <a class="nav-link {% if s == 'website' and request.resolver_match.url_name|slice:':4' == 'test' %}active{% endif %}" href="{% url 'dashboard:testimonials' %}"><i class="bi bi-chat-quote"></i>Testimonials</a>
     <a class="nav-link {% if s == 'website' and request.resolver_match.url_name|slice:':3' == 'faq' %}active{% endif %}" href="{% url 'dashboard:faqs' %}"><i class="bi bi-question-circle"></i>FAQs</a>
+    <a class="nav-link {% if s == 'website' and request.resolver_match.url_name|slice:':3' == 'why' %}active{% endif %}" href="{% url 'dashboard:why' %}"><i class="bi bi-stars"></i>Why choose us</a>
     <a class="nav-link {% if s == 'website' and request.resolver_match.url_name|slice:':4' == 'subs' %}active{% endif %}" href="{% url 'dashboard:subscribers' %}"><i class="bi bi-envelope-paper-heart"></i>Newsletter</a>
     <div class="nav-section">Students</div>
     <a class="nav-link {% if s == 'students' %}active{% endif %}" href="{% url 'dashboard:students' %}"><i class="bi bi-person-lines-fill"></i>Student management</a>

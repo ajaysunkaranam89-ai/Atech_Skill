@@ -168,3 +168,14 @@ def jsonld(data):
         payload = json.dumps(d, cls=DjangoJSONEncoder, ensure_ascii=False).translate(_json_script_escapes)
         out.append(f'<script type="application/ld+json">{payload}</script>')
     return mark_safe("\n".join(out))
+
+
+@register.filter
+def resume_time(seconds):
+    try:
+        s = int(seconds)
+    except (TypeError, ValueError):
+        return ""
+    h, r = divmod(s, 3600)
+    m, sec = divmod(r, 60)
+    return f"{h}:{m:02d}:{sec:02d}" if h else f"{m}:{sec:02d}"
