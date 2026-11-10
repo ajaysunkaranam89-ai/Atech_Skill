@@ -1,0 +1,4 @@
+{# pct (0-100), size px, optional light=1 for dark backgrounds #}
+<div class="progress-ring{% if light %} light{% endif %}" style="--p:{{ pct|default:0 }};--s:{{ size|default:56 }}px" role="img" aria-label="{{ pct|default:0 }}% complete">
+  <span>{{ pct|default:0 }}%</span>
+</div>

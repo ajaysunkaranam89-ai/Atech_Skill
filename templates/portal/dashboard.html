@@ -14,6 +14,19 @@
 
   <div class="row g-4">
     <div class="col-lg-8">
+      {% if continue_item %}
+      <div class="continue-card mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+          {% include "partials/progress_ring.html" with pct=continue_item.progress.percent size=86 light=1 %}
+          <div class="me-auto">
+            <div class="small text-uppercase fw-semibold text-cyan" style="letter-spacing:.08em">{% if continue_item.finished %}Course completed{% elif continue_item.resumed %}Continue where you left off{% else %}Start learning{% endif %}</div>
+            <h2 class="h5 fw-bold text-white mb-1">{{ continue_item.lesson.title }}</h2>
+            <div class="small text-white-50">{{ continue_item.course.title }} · {{ continue_item.progress.completed }}/{{ continue_item.progress.total }} lessons done</div>
+          </div>
+          <a href="{% url 'portal:lesson' continue_item.course.slug continue_item.lesson.pk %}" class="btn btn-cyan btn-lg text-nowrap"><i class="bi bi-play-fill me-1"></i>{% if continue_item.finished %}Review{% elif continue_item.resumed %}Resume{% else %}Start{% endif %}</a>
+        </div>
+      </div>
+      {% endif %}
       <h2 class="h5 section-title">My courses</h2>
       {% if enrollments %}
       <div class="row g-3 mb-4">
@@ -24,7 +37,7 @@
             <div class="card-body">
               <h3 class="h6 mb-1"><a class="text-navy" href="{% url 'portal:course_home' e.course.slug %}">{{ e.course.title }}</a></h3>
               <div class="small text-muted mb-2">{% if e.batch %}Batch {{ e.batch.code }} · {% endif %}{% if e.expires_at %}access till {{ e.expires_at|date:"d M Y" }}{% else %}lifetime access{% endif %}</div>
-              <div class="progress mb-1"><div class="progress-bar" style="width:{{ e.progress.percent }}%"></div></div>
+              <div class="d-flex align-items-center gap-3 mb-1">{% include "partials/progress_ring.html" with pct=e.progress.percent size=52 %}<div class="flex-grow-1"><div class="progress"><div class="progress-bar" style="width:{{ e.progress.percent }}%"></div></div></div></div>
               <div class="d-flex small"><span class="text-muted me-auto">{{ e.progress.completed }}/{{ e.progress.total }} lessons</span><strong>{{ e.progress.percent }}%</strong></div>
               <a href="{% url 'portal:course_home' e.course.slug %}" class="btn btn-cyan btn-sm w-100 mt-2">{% if e.progress.completed %}Continue{% else %}Start learning{% endif %}</a>
             </div>
@@ -65,11 +78,17 @@
         <div class="card-header fw-semibold"><i class="bi bi-broadcast text-cyan me-1"></i>Upcoming live classes</div>
         <ul class="list-group list-group-flush">
           {% for c in upcoming %}
-          <li class="list-group-item">
-            <div class="fw-medium">{{ c.title }}</div>
-            <div class="small text-muted">{{ c.start_at|date:"D d M, h:i A" }} · {{ c.duration_minutes }} min · {{ c.batch.course.title }}</div>
-            {% if c.is_live_now %}<a href="{{ c.meet_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-success mt-2"><i class="bi bi-camera-video me-1"></i>Join now</a>
-            {% else %}<a href="{{ c.meet_url }}" target="_blank" rel="noopener" class="small">Google Meet link</a>{% endif %}
+          <li class="list-group-item d-flex gap-3 align-items-start">
+            <div class="cal-date{% if c.is_live_now %} live{% endif %}"><span>{{ c.start_at|date:"M" }}</span><strong>{{ c.start_at|date:"d" }}</strong><small>{{ c.start_at|date:"D" }}</small></div>
+            <div class="flex-grow-1">
+              <div class="fw-medium">{{ c.title }}</div>
+              <div class="small text-muted">{{ c.start_at|date:"h:i A" }} · {{ c.duration_minutes }} min · {{ c.batch.course.title }}</div>
+              <div class="d-flex flex-wrap gap-2 mt-1">
+                {% if c.is_live_now %}<a href="{{ c.meet_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-success"><i class="bi bi-camera-video me-1"></i>Join now</a>
+                {% else %}<a href="{{ c.meet_url }}" target="_blank" rel="noopener" class="small"><i class="bi bi-camera-video me-1"></i>Meet link</a>{% endif %}
+                <a href="{{ c.gcal }}" target="_blank" rel="noopener" class="small"><i class="bi bi-calendar-plus me-1"></i>Add to calendar</a>
+              </div>
+            </div>
           </li>
           {% empty %}<li class="list-group-item small text-muted">No upcoming classes.</li>{% endfor %}
         </ul>

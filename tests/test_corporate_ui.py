@@ -126,3 +126,29 @@ class AdminPhase3Tests(LMSTestCase):
         d = self.client.get(reverse("dashboard:overview")).context["charts"]
         self.assertNotIn("revenue", d)
         self.assertNotIn("funnel", d)
+
+
+class PortalPhase4Tests(LMSTestCase):
+    def test_continue_card_rings_and_calendar(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.courses.models import Batch, BatchStudent, LessonProgress, LiveClass
+
+        c = self.make_course()
+        m = self.make_module(c)
+        l1, l2 = self.make_lesson(m, title="Intro"), self.make_lesson(m, title="Routing")
+        self.enroll(self.student, c)
+        LessonProgress.objects.create(user=self.student, lesson=l1, completed=True)
+        b = Batch.objects.create(course=c, name="Eve", code="E1", start_date="2026-12-01")
+        BatchStudent.objects.create(batch=b, student=self.student)
+        LiveClass.objects.create(batch=b, title="Live Q&A", meet_url="https://meet.google.com/abc-defg-hij",
+                                 start_at=timezone.now() + timedelta(days=1))
+        self.login(self.student)
+        html = self.client.get(reverse("portal:dashboard")).content.decode()
+        self.assertIn("Continue where you left off", html)
+        self.assertIn(reverse("portal:lesson", args=[c.slug, l2.pk]), html)  # next incomplete lesson
+        self.assertIn("progress-ring", html)
+        self.assertIn("calendar.google.com/calendar/render", html)
+        self.assertIn("cal-date", html)

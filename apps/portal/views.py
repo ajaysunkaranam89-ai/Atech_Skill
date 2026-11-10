@@ -1,5 +1,6 @@
 """Student learning portal."""
 from datetime import timedelta
+from datetime import timezone as dt_timezone
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -62,9 +63,6 @@ def dashboard(request):
     ctx = {
         "enrollments": enrollments,
         "recent_lessons": recent,
-        "upcoming": LiveClass.objects.filter(
-            batch_id__in=batch_ids, status=LiveClassStatus.SCHEDULED, start_at__gte=now - timedelta(hours=2)
-        ).select_related("batch__course").order_by("start_at")[:5],
         "assignments": Assignment.objects.filter(course_id__in=course_ids, is_published=True)
         .exclude(submissions__student=user).select_related("course").order_by("due_at")[:5],
         "materials": LessonResource.objects.filter(
@@ -76,8 +74,50 @@ def dashboard(request):
         )[:4],
         "pending_upi": UpiPaymentSubmission.objects.filter(student=user, status="pending").select_related("course"),
         "now": now,
+        "continue_item": _continue_learning(user, enrollments),
+        "upcoming": _with_gcal(LiveClass.objects.filter(
+            batch_id__in=batch_ids, status=LiveClassStatus.SCHEDULED, start_at__gte=now - timedelta(hours=2)
+        ).select_related("batch__course").order_by("start_at")[:8]),
     }
     return render(request, "portal/dashboard.html", ctx)
+
+
+def _continue_learning(user, enrollments):
+    """Most recently viewed course -> its next incomplete published lesson (or first lesson)."""
+    valid = {e.course_id: e for e in enrollments}
+    if not valid:
+        return None
+    last = (LessonProgress.objects.filter(user=user, lesson__module__course_id__in=valid)
+            .select_related("lesson__module__course").order_by("-last_viewed_at").first())
+    enrollment = valid[last.lesson.module.course_id] if last else enrollments[0]
+    course = enrollment.course
+    done = set(LessonProgress.objects.filter(user=user, completed=True, lesson__module__course=course).values_list("lesson_id", flat=True))
+    sequence = [l for m in student_outline(course) for l in m.visible_lessons]
+    if not sequence:
+        return None
+    nxt = next((l for l in sequence if l.pk not in done), None)
+    return {"course": course, "lesson": nxt or sequence[-1], "finished": nxt is None,
+            "progress": enrollment.progress, "resumed": last is not None}
+
+
+def _with_gcal(classes):
+    items = list(classes)
+    for c in items:
+        c.gcal = gcal_link(c)
+    return items
+
+
+def gcal_link(lc):
+    """Google Calendar 'add event' URL for a live class."""
+    from urllib.parse import urlencode
+
+    fmt = "%Y%m%dT%H%M%SZ"
+    start = lc.start_at.astimezone(dt_timezone.utc)
+    end = lc.end_at.astimezone(dt_timezone.utc)
+    return "https://calendar.google.com/calendar/render?" + urlencode({
+        "action": "TEMPLATE", "text": f"{lc.title} – {lc.batch.course.title}",
+        "dates": f"{start.strftime(fmt)}/{end.strftime(fmt)}", "details": f"Join: {lc.meet_url}", "location": lc.meet_url,
+    })
 
 
 def _course_for_learning(request, slug):
