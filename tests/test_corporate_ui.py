@@ -97,3 +97,32 @@ class CoursePagePhase2Tests(LMSTestCase):
         page = self.client.get(c.get_absolute_url()).content.decode()
         for text in ('class="course-subnav', 'id="batches"', "Reserve seat", 'id="certificate"', "mobile-cta"):
             self.assertIn(text, page)
+
+
+class AdminPhase3Tests(LMSTestCase):
+    def test_charts_and_quick_create_by_role(self):
+        import json
+
+        from apps.enrollments.models import Payment, PaymentGateway, PaymentStatus
+        from django.utils import timezone
+
+        c = self.make_course()
+        e = self.enroll(self.student, c)
+        e.activated_at = timezone.now()
+        e.save()
+        Payment.objects.create(student=self.student, course=c, gateway=PaymentGateway.UPI, amount=1500,
+                               status=PaymentStatus.PAID, paid_at=timezone.now())
+        self.login(self.owner)
+        r = self.client.get(reverse("dashboard:overview"))
+        self.assertContains(r, 'id="chart-data"')
+        d = json.loads(json.dumps(r.context["charts"]))
+        self.assertEqual(len(d["labels"]), 12)
+        self.assertEqual(d["revenue"][-1], 1500.0)
+        self.assertEqual(d["enrollments"][-1], 1.0)
+        self.assertIn("funnel", d)
+        self.assertContains(r, 'class="breadcrumb')
+        self.assertContains(r, reverse("dashboard:course_add"))
+        self.login(self.trainer)
+        d = self.client.get(reverse("dashboard:overview")).context["charts"]
+        self.assertNotIn("revenue", d)
+        self.assertNotIn("funnel", d)

@@ -99,7 +99,36 @@ def overview(request):
 
         ctx["backup"] = _ops.backup_status()
         ctx["email"] = _ops.email_status()
+    ctx["charts"] = _chart_data(u, courses, now)
     return render(request, "dashboard/overview.html", ctx)
+
+
+def _chart_data(u, courses, now):
+    """Last-12-month series for the overview charts (role-scoped)."""
+    from django.db.models.functions import TruncMonth
+
+    start = (now.replace(day=1) - timedelta(days=330)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    months, d = [], start
+    for _ in range(12):
+        months.append(d.date().replace(day=1))
+        d = (d + timedelta(days=32)).replace(day=1)
+    labels = [m.strftime("%b %y") for m in months]
+
+    def series(qs, field, agg):
+        rows = qs.filter(**{f"{field}__gte": start}).annotate(m=TruncMonth(field)).values("m").annotate(v=agg).order_by()
+        by = {r["m"].date() if hasattr(r["m"], "date") else r["m"]: float(r["v"] or 0) for r in rows}
+        return [by.get(m, 0) for m in months]
+
+    data = {"labels": labels,
+            "enrollments": series(Enrollment.objects.filter(course__in=courses, activated_at__isnull=False), "activated_at", Count("id"))}
+    if u.is_super_admin:
+        data["revenue"] = series(Payment.objects.filter(status=PaymentStatus.PAID), "paid_at", Sum("amount"))
+    if u.can_manage_all_content:
+        from apps.core.models import Enquiry, EnquiryStatus
+
+        counts = dict(Enquiry.objects.values_list("status").annotate(n=Count("id")))
+        data["funnel"] = {"labels": [l for _, l in EnquiryStatus.choices], "values": [counts.get(k, 0) for k, _ in EnquiryStatus.choices]}
+    return data
 
 
 # --------------------------------------------------------------------- batches

@@ -35,6 +35,12 @@
   {% endif %}
 </div>
 
+<div class="row g-4 mb-4">
+  {% if charts.revenue %}<div class="col-xl-6"><div class="card h-100"><div class="card-header fw-semibold">Revenue – last 12 months (₹)</div><div class="card-body"><canvas id="chRevenue" height="190" aria-label="Revenue by month"></canvas></div></div></div>{% endif %}
+  <div class="col-xl-{% if charts.revenue %}6{% else %}7{% endif %}"><div class="card h-100"><div class="card-header fw-semibold">New enrollments – last 12 months</div><div class="card-body"><canvas id="chEnroll" height="190" aria-label="Enrollments by month"></canvas></div></div></div>
+  {% if charts.funnel %}<div class="col-xl-{% if charts.revenue %}12{% else %}5{% endif %}"><div class="card h-100"><div class="card-header fw-semibold d-flex">Lead funnel<a class="ms-auto small" href="{% url 'dashboard:enquiries' %}">Open enquiries →</a></div><div class="card-body"><canvas id="chFunnel" height="{% if charts.revenue %}90{% else %}190{% endif %}" aria-label="Leads by status"></canvas></div></div></div>{% endif %}
+</div>
+{{ charts|json_script:"chart-data" }}
 <div class="row g-4">
   <div class="col-lg-7">
     <div class="card h-100">
@@ -70,4 +76,28 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  if (!window.Chart) return;
+  const d = JSON.parse(document.getElementById("chart-data").textContent);
+  const navy = "#000f2f", cyan = "#00b4d8";
+  Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+  Chart.defaults.color = "#6b7a90";
+  const grid = { color: "#eef2f8" };
+  function el(id) { return document.getElementById(id); }
+  if (el("chRevenue") && d.revenue) new Chart(el("chRevenue"), { type: "bar",
+    data: { labels: d.labels, datasets: [{ label: "Revenue", data: d.revenue, backgroundColor: cyan, borderRadius: 6 }] },
+    options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => "₹" + c.parsed.y.toLocaleString("en-IN") } } },
+               scales: { y: { beginAtZero: true, grid: grid, ticks: { callback: v => "₹" + Number(v).toLocaleString("en-IN") } }, x: { grid: { display: false } } } } });
+  if (el("chEnroll")) new Chart(el("chEnroll"), { type: "line",
+    data: { labels: d.labels, datasets: [{ label: "Enrollments", data: d.enrollments, borderColor: navy, backgroundColor: "rgba(0,180,216,.15)", fill: true, tension: .35, pointRadius: 3 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: grid, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+  if (el("chFunnel") && d.funnel) new Chart(el("chFunnel"), { type: "bar",
+    data: { labels: d.funnel.labels, datasets: [{ data: d.funnel.values, backgroundColor: ["#00b4d8", "#0096c7", "#0077b6", "#20c997", "#adb5bd"], borderRadius: 6 }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: grid, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
+})();
+</script>
 {% endblock %}

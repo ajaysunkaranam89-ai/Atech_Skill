@@ -217,3 +217,15 @@ a:focus-visible, .btn:focus-visible, .form-control:focus-visible, .form-select:f
 .cert-preview-name { font-family: "Poppins", serif; font-size: 1.5rem; color: var(--ts-navy); border-bottom: 2px solid var(--ts-cyan); display: inline-block; padding: 0 1rem; margin: .3rem 0; }
 .mobile-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1040; background: #fff; border-top: 1px solid #e3e9f2; box-shadow: 0 -6px 20px rgba(0,15,47,.12); padding: .6rem 1rem; display: flex; align-items: center; justify-content: space-between; }
 @media (max-width: 991.98px) { body:has(.mobile-cta) .whatsapp-float { bottom: 80px; } body:has(.mobile-cta) footer { padding-bottom: 5rem !important; } .course-subnav { top: 56px; } }
+
+/* ---------- Phase 3: admin polish ---------- */
+.dash-topbar .breadcrumb { --bs-breadcrumb-divider-color: #9aa8bb; }
+.dash-topbar .breadcrumb a { color: var(--ts-muted); }
+.table-manage thead th { position: sticky; top: 0; z-index: 1; }
+.table-manage tbody tr { transition: background-color .12s; }
+.table-manage tbody tr:hover { background: #f6f9fd; }
+.table-manage td, .table-manage th { padding: .7rem .8rem; }
+.dash-content .card { box-shadow: 0 1px 3px rgba(0,15,47,.04); }
+.dash-content .card-header { background: #fff; border-bottom-color: #eef2f8; }
+.kpi { transition: box-shadow .15s, transform .15s; }
+a.kpi:hover { box-shadow: var(--ts-shadow); transform: translateY(-2px); }

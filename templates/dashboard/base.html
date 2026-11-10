@@ -45,7 +45,26 @@
 <div class="dash-main">
   <header class="dash-topbar d-flex align-items-center gap-3">
     <button class="btn btn-sm btn-outline-secondary d-lg-none" data-toggle-sidebar aria-label="Menu"><i class="bi bi-list"></i></button>
-    <div class="fw-semibold text-navy text-truncate">{% block page_title %}{{ title }}{% endblock %}</div>
+    <nav aria-label="breadcrumb" class="text-truncate"><ol class="breadcrumb mb-0 small">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:overview' %}"><i class="bi bi-house-door"></i></a></li>
+      <li class="breadcrumb-item active fw-semibold text-navy" aria-current="page">{% block page_title %}{{ title|default:"Dashboard" }}{% endblock %}</li>
+    </ol></nav>
+    <div class="dropdown">
+      <button class="btn btn-sm btn-cyan dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Create</span></button>
+      <ul class="dropdown-menu shadow">
+        {% if user.can_manage_all_content %}<li><a class="dropdown-item" href="{% url 'dashboard:course_add' %}"><i class="bi bi-journal-plus me-2"></i>Course</a></li>{% endif %}
+        <li><a class="dropdown-item" href="{% url 'dashboard:video_add' %}"><i class="bi bi-camera-reels me-2"></i>Recorded lesson</a></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:resource_add' %}"><i class="bi bi-file-earmark-pdf me-2"></i>Study material</a></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:live_add' %}"><i class="bi bi-broadcast me-2"></i>Live class</a></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:assignment_add' %}"><i class="bi bi-journal-check me-2"></i>Assignment</a></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:announcement_add' %}"><i class="bi bi-megaphone me-2"></i>Announcement</a></li>
+        {% if user.can_manage_all_content %}<li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:batch_add' %}"><i class="bi bi-people me-2"></i>Batch</a></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:testimonial_add' %}"><i class="bi bi-chat-quote me-2"></i>Testimonial</a></li>
+        <li><a class="dropdown-item" href="{% url 'dashboard:faq_add' %}"><i class="bi bi-question-circle me-2"></i>FAQ</a></li>{% endif %}
+        {% if user.is_super_admin %}<li><a class="dropdown-item" href="{% url 'dashboard:enrollment_add' %}"><i class="bi bi-person-check me-2"></i>Enrollment</a></li>{% endif %}
+      </ul>
+    </div>
     <div class="ms-auto d-flex align-items-center gap-3">
       <a href="{% url 'core:home' %}" target="_blank" class="small"><i class="bi bi-box-arrow-up-right me-1"></i>View website</a>
       <div class="dropdown">
