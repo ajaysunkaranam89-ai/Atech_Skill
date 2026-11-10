@@ -309,3 +309,16 @@ body:not(:has(.whatsapp-float)) .advisor-float { bottom: 18px; }
 [data-bs-theme="dark"] .fchip.on { background: var(--ts-cyan); border-color: var(--ts-cyan); color: #04293a; }
 [data-bs-theme="dark"] .skeleton, [data-bs-theme="dark"] .skeleton-box { background: linear-gradient(90deg, #16263d 0%, #1d3049 50%, #16263d 100%) !important; background-size: 800px 100% !important; }
 [data-bs-theme="dark"] .hero-logo-card, [data-bs-theme="dark"] .cert-preview { background: #fff; }
+
+/* ---------- category cards ---------- */
+.cat-card { display: flex; flex-direction: column; gap: .35rem; height: 100%; padding: 1.2rem; border-radius: var(--ts-radius-lg); background: var(--bs-body-bg);
+  border: 1px solid #e3e9f2; color: var(--bs-body-color); transition: transform .18s, box-shadow .18s, border-color .18s; }
+.cat-card:hover { transform: translateY(-4px); box-shadow: var(--ts-shadow-lg); border-color: var(--ts-cyan); color: var(--bs-body-color); }
+.cat-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 1.5rem; color: #fff;
+  background: linear-gradient(135deg, var(--ts-cyan), #0062b8); }
+.cat-name { font-weight: 700; color: var(--ts-navy); margin-top: .4rem; }
+.cat-count { font-size: .82rem; color: #0a7ea4; }
+.cat-card:hover .cat-count .bi { transform: translateX(3px); }
+.cat-count .bi { display: inline-block; transition: transform .18s; }
+[data-bs-theme="dark"] .cat-card { background: #111d31; border-color: #22324b; }
+[data-bs-theme="dark"] .cat-name { color: #e8eef7; }

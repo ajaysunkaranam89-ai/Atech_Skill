@@ -146,7 +146,8 @@
         {% for t in trainers %}
         <div class="d-flex gap-3 {% if not forloop.last %}mb-3 pb-3 border-bottom{% endif %}">
           {% if t.photo %}<img src="{{ t.photo.url }}" alt="" width="72" height="72" class="rounded-circle object-fit-cover">{% else %}<div class="brand-mark" style="width:72px;height:72px;font-size:1.4rem">{{ t.user|initials }}</div>{% endif %}
-          <div><h6 class="mb-0"><a class="text-navy" href="{% url 'core:trainer_detail' t.pk %}">{{ t.user.get_full_name }}</a></h6><div class="small text-muted mb-1">{{ t.designation }}{% if t.experience_years %} · {{ t.experience_years }}+ yrs{% endif %}</div><p class="small mb-1">{{ t.bio|first_paragraph|truncatewords:60 }}</p><a class="small fw-semibold" href="{% url 'core:trainer_detail' t.pk %}">View full trainer profile →</a></div>
+          <div><h6 class="mb-0"><a class="text-navy" href="{% url 'core:trainer_detail' t.pk %}">{{ t.user.get_full_name }}</a></h6><div class="small text-muted mb-1">{{ t.designation }}{% if t.experience_years %} · {{ t.experience_years }}+ yrs{% endif %}</div><p class="small mb-1">{{ t.bio|first_paragraph|truncatewords:60 }}</p><a class="small fw-semibold" href="{% url 'core:trainer_detail' t.pk %}">View full trainer profile →</a>
+          {% if t.intro_embed_url %}<div class="ratio ratio-16x9 rounded overflow-hidden mt-2" style="max-width:420px"><iframe src="{{ t.intro_embed_url }}" title="Meet {{ t.user.get_full_name }}" loading="lazy" allowfullscreen></iframe></div>{% endif %}</div>
         </div>
         {% endfor %}
       </div>

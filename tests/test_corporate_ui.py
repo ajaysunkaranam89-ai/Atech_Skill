@@ -298,3 +298,21 @@ class UiPackTests(LMSTestCase):
         self.enroll(self.student, live)
         self.login(self.student)
         self.assertIn("bottom-nav", self.client.get(reverse("portal:dashboard")).content.decode())
+
+
+class CategoryAndTrainerVideoTests(LMSTestCase):
+    def test_category_cards_and_trainer_video(self):
+        from apps.courses.models import CourseCategory
+
+        cat = CourseCategory.objects.create(name="Cloud", icon="bi-cloud")
+        c = self.make_course(title="AWS")
+        c.category = cat
+        c.save()
+        html = self.client.get("/").content.decode()
+        self.assertIn("cat-card", html)
+        self.assertIn("bi-cloud", html)
+        self.trainer_profile.intro_video_url = "https://youtu.be/dQw4w9WgXcQ"
+        self.trainer_profile.save()
+        embed = "youtube-nocookie.com/embed/dQw4w9WgXcQ"
+        self.assertIn(embed, self.client.get(reverse("core:trainer_detail", args=[self.trainer_profile.pk])).content.decode())
+        self.assertIn(embed, self.client.get(c.get_absolute_url()).content.decode())

@@ -27,6 +27,9 @@
 <div class="container py-4">
   <div class="row g-4">
     <div class="col-lg-8">
+      {% if trainer.intro_embed_url %}
+      <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm mb-4"><iframe src="{{ trainer.intro_embed_url }}" title="Meet {{ trainer.user.get_full_name }}" loading="lazy" allowfullscreen></iframe></div>
+      {% endif %}
       <div class="card card-body p-4 trainer-bio">
         {% if trainer.bio %}{{ trainer.bio|rich_text }}{% else %}<p class="text-muted mb-0">Profile coming soon.</p>{% endif %}
       </div>

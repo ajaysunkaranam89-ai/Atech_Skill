@@ -130,6 +130,7 @@ class TrainerProfile(models.Model):
     experience_years = models.PositiveSmallIntegerField(default=0)
     photo = models.ImageField(upload_to="trainers/", blank=True, validators=[validate_image_upload])
     linkedin_url = models.URLField(blank=True)
+    intro_video_url = models.URLField(blank=True, help_text="YouTube link to a short (1–2 min) introduction video")
     is_public = models.BooleanField(default=True, help_text="Show on public course pages")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -138,6 +139,13 @@ class TrainerProfile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+    @property
+    def intro_embed_url(self):
+        from apps.courses.models import extract_youtube_id
+
+        yid = extract_youtube_id(self.intro_video_url)
+        return f"https://www.youtube-nocookie.com/embed/{yid}?rel=0&modestbranding=1" if yid else None
 
     @property
     def expertise_list(self):

@@ -47,8 +47,19 @@
 
 <section class="container py-5">
   {% if categories %}
-  <div class="d-flex flex-wrap gap-2 mb-4">
-    {% for c in categories %}<a class="chip fs-6 px-3 py-2" href="{% url 'core:course_list' %}?category={{ c.slug }}"><i class="bi {{ c.icon|default:'bi-tag' }}"></i>{{ c.name }} <span class="text-muted">({{ c.n }})</span></a>{% endfor %}
+  <div class="mb-5">
+    <h2 class="section-title mb-3">Explore by category</h2>
+    <div class="row g-3">
+      {% for c in categories %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <a class="cat-card" href="{% url 'core:course_list' %}?category={{ c.slug }}">
+          <span class="cat-icon"><i class="bi {{ c.icon|default:'bi-mortarboard' }}" aria-hidden="true"></i></span>
+          <span class="cat-name">{{ c.name }}</span>
+          <span class="cat-count">{{ c.n }} course{{ c.n|pluralize }} <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
   </div>
   {% endif %}
   <div class="d-flex justify-content-between align-items-end mb-3">

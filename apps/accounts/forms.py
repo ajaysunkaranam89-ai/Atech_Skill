@@ -164,7 +164,7 @@ class AdminUserForm(BootstrapMixin, forms.ModelForm):
 class TrainerProfileForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = TrainerProfile
-        fields = ["designation", "bio", "expertise", "experience_years", "photo", "linkedin_url", "is_public"]
+        fields = ["designation", "bio", "expertise", "experience_years", "photo", "linkedin_url", "intro_video_url", "is_public"]
         widgets = {"bio": forms.Textarea(attrs={"rows": 4})}
 
     def __init__(self, *args, **kwargs):
