@@ -91,6 +91,9 @@ class SiteSettings(models.Model):
     certification_paths = models.TextField(
         blank=True, help_text="Certifications your courses prepare for, one per line (e.g. Cisco CCNA, AWS Solutions Architect)"
     )
+    exit_popup_enabled = models.BooleanField(
+        "Exit popup", default=True, help_text="Offer a free demo / brochure when a visitor is about to leave (max once a week per visitor)"
+    )
     topbar_text = models.CharField(
         "Top bar announcement", max_length=120, blank=True, help_text="Short message in the top bar, e.g. 'New AWS batch starts 1 Dec'"
     )

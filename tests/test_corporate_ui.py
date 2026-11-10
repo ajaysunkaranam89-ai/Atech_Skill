@@ -316,3 +316,21 @@ class CategoryAndTrainerVideoTests(LMSTestCase):
         embed = "youtube-nocookie.com/embed/dQw4w9WgXcQ"
         self.assertIn(embed, self.client.get(reverse("core:trainer_detail", args=[self.trainer_profile.pk])).content.decode())
         self.assertIn(embed, self.client.get(c.get_absolute_url()).content.decode())
+
+
+class ExitPopupTests(LMSTestCase):
+    def test_exit_popup_rules(self):
+        from apps.core.models import SiteSettings
+
+        c = self.make_course(title="CCNA")
+        self.assertIn("data-exit-popup", self.client.get("/").content.decode())
+        page = self.client.get(c.get_absolute_url()).content.decode()
+        self.assertIn("Get the CCNA brochure", page)
+        self.assertNotIn("data-exit-popup", self.client.get(reverse("core:enquiry")).content.decode())
+        self.login(self.student)
+        self.assertNotIn("data-exit-popup", self.client.get("/").content.decode())
+        self.client.logout()
+        s = SiteSettings.load()
+        s.exit_popup_enabled = False
+        s.save()
+        self.assertNotIn("data-exit-popup", self.client.get("/").content.decode())

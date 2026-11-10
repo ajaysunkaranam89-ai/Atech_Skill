@@ -322,3 +322,7 @@ body:not(:has(.whatsapp-float)) .advisor-float { bottom: 18px; }
 .cat-count .bi { display: inline-block; transition: transform .18s; }
 [data-bs-theme="dark"] .cat-card { background: #111d31; border-color: #22324b; }
 [data-bs-theme="dark"] .cat-name { color: #e8eef7; }
+
+/* ---------- exit popup ---------- */
+.exit-modal { border: 0; border-radius: var(--ts-radius-lg); box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+.exit-head { background: radial-gradient(500px 200px at 90% -20%, rgba(0,180,216,.45), transparent 60%), linear-gradient(135deg, var(--ts-navy), #0b3a6e); }

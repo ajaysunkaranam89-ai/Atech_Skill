@@ -505,7 +505,7 @@ class SiteSettingsForm(StyledModelForm):
         ("Contact details", ["legal_business_name", "contact_email", "contact_phone", "whatsapp_number", "address"]),
         ("Social links", ["facebook_url", "instagram_url", "linkedin_url", "youtube_url"]),
         ("Home page trust strip (real figures only; blank = hidden)",
-         ["stat_students", "stat_years", "stat_batches", "stat_placement", "stat_rating", "certification_paths", "topbar_text"]),
+         ["stat_students", "stat_years", "stat_batches", "stat_placement", "stat_rating", "certification_paths", "topbar_text", "exit_popup_enabled"]),
         ("Corporate training page", ["corporate_intro", "corporate_clients"]),
         ("SEO & analytics", ["seo_home_title", "seo_home_description", "city", "google_site_verification", "google_analytics_id"]),
         ("Payments", ["razorpay_enabled", "upi_enabled", "upi_id", "upi_payee_name", "upi_qr_code", "upi_instructions"]),

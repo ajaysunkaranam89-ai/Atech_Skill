@@ -291,3 +291,36 @@
     setTimeout(function () { clearInterval(t); c.parentElement.classList.remove("skeleton-box"); }, 8000);
   });
 })();
+
+/* Exit-intent popup: desktop = mouse leaves through the top; mobile = 40 s on page and half-way scrolled.
+   Shown at most once every 7 days per visitor, never after they submit. */
+(function () {
+  const el = document.querySelector("[data-exit-popup]");
+  if (!el || !window.bootstrap) return;
+  const KEY = "ts-exit-popup", WEEK = 7 * 86400000;
+  let last = 0;
+  try { last = parseInt(localStorage.getItem(KEY) || "0", 10); } catch (e) { return; }
+  if (Date.now() - last < WEEK) return;
+  let shown = false;
+  const show = function () {
+    if (shown || document.querySelector(".modal.show")) return;
+    shown = true;
+    try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+    bootstrap.Modal.getOrCreateInstance(el).show();
+  };
+  const ready = Date.now() + 8000;  // never in the first 8 seconds
+  document.addEventListener("mouseout", function (e) {
+    if (!e.relatedTarget && e.clientY <= 0 && Date.now() > ready) show();
+  });
+  if (window.matchMedia("(pointer: coarse)").matches) {
+    setTimeout(function () {
+      const check = function () {
+        if (window.scrollY > (document.body.scrollHeight - window.innerHeight) * 0.5) { show(); window.removeEventListener("scroll", check); }
+      };
+      window.addEventListener("scroll", check, { passive: true }); check();
+    }, 40000);
+  }
+  el.querySelector("form").addEventListener("submit", function () {
+    try { localStorage.setItem(KEY, String(Date.now() + 10 * 365 * 86400000)); } catch (e) {}
+  });
+})();

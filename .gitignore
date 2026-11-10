@@ -9,3 +9,4 @@ staticfiles/
 backups/
 nginx/certs/
 nginx/certbot-www/
+marketing/

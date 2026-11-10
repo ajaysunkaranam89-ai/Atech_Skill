@@ -33,5 +33,31 @@
   <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><i class="bi bi-person" aria-hidden="true"></i><span>Profile</span></a>
 </nav>
 {% endif %}
+{% if academy.exit_popup_enabled and not user.is_authenticated and not noindex and request.resolver_match.url_name != 'enquiry' %}
+<div class="modal fade" id="exitModal" tabindex="-1" aria-labelledby="exitTitle" aria-hidden="true" data-exit-popup>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content exit-modal overflow-hidden">
+      <div class="exit-head p-4 text-white">
+        <button type="button" class="btn-close btn-close-white float-end" data-bs-dismiss="modal" aria-label="Close"></button>
+        <span class="hero-badge"><i class="bi bi-gift me-1"></i>Free for you</span>
+        <h2 class="h4 fw-bold mt-3 mb-1" id="exitTitle">{% if course %}Get the {{ course.title }} brochure{% else %}Before you go – try a free demo class{% endif %}</h2>
+        <p class="small text-white-50 mb-0">{% if course %}Full syllabus, fees, batch dates and trainer details as a PDF.{% else %}A trainer will call you, suggest the right course and invite you to a live demo.{% endif %}</p>
+      </div>
+      <form method="post" action="{% url 'core:enquiry' %}" class="p-4" novalidate>{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="kind" value="{% if course %}brochure{% else %}demo{% endif %}">
+        {% if course %}<input type="hidden" name="course" value="{{ course.pk }}">{% endif %}
+        <div class="hp-field" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div>
+        <label class="form-label small fw-medium" for="exit-name">Your name</label>
+        <input id="exit-name" name="name" class="form-control mb-2" required autocomplete="name">
+        <label class="form-label small fw-medium" for="exit-phone">Mobile / WhatsApp</label>
+        <input id="exit-phone" name="phone" class="form-control mb-3" required inputmode="tel" autocomplete="tel" placeholder="10-digit mobile number">
+        <button class="btn btn-cyan w-100 btn-lg" data-exit-submit>{% if course %}<i class="bi bi-download me-1"></i>Download brochure{% else %}<i class="bi bi-calendar-check me-1"></i>Book my free demo{% endif %}</button>
+        <p class="small text-muted text-center mt-2 mb-0">No spam. <a href="{% url 'core:privacy' %}">Privacy</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% include "partials/site_footer.html" %}
 {% endblock %}
