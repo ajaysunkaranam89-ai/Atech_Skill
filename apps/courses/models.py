@@ -79,6 +79,15 @@ class CourseQuerySet(models.QuerySet):
     def published(self):
         return self.filter(status=CourseStatus.PUBLISHED)
 
+    def with_next_batch(self):
+        """Annotate `next_batch_date`: earliest open upcoming/ongoing batch start (for course cards)."""
+        from django.db.models import Min, Q
+
+        return self.annotate(next_batch_date=Min(
+            "batches__start_date",
+            filter=Q(batches__is_open_for_enrollment=True, batches__status__in=["upcoming", "ongoing"]),
+        ))
+
     def managed_by(self, user):
         if user.can_manage_all_content:
             return self

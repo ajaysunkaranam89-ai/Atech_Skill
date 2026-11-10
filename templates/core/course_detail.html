@@ -29,9 +29,14 @@
   </div>
 </div>
 
+<nav class="course-subnav sticky-top" aria-label="Course sections">
+  <div class="container d-flex gap-1 overflow-auto">
+    <a href="#overview">Overview</a><a href="#curriculum">Curriculum</a>{% if batches %}<a href="#batches">Batches</a>{% endif %}{% if trainers %}<a href="#trainer">Trainer</a>{% endif %}{% if course_testimonials %}<a href="#reviews">Reviews</a>{% endif %}{% if course.certificate_enabled %}<a href="#certificate">Certificate</a>{% endif %}{% if course_faqs %}<a href="#faq">FAQ</a>{% endif %}
+  </div>
+</nav>
 <div class="container py-4">
   <div class="row g-4">
-    <div class="col-lg-8 order-2 order-lg-1">
+    <div class="col-lg-8 order-2 order-lg-1" id="overview">
       {% if course.objectives_list %}
       <div class="card card-body mb-4">
         <h4 class="section-title h5">What you'll learn</h4>
@@ -52,7 +57,7 @@
       {% endif %}
 
       <div class="card mb-4">
-        <div class="card-body pb-0"><h4 class="section-title h5">Course content</h4></div>
+        <div class="card-body pb-0" id="curriculum"><h4 class="section-title h5">Course content</h4></div>
         {% if outline %}
         <div class="accordion accordion-flush outline" id="outline">
           {% for m in outline %}
@@ -86,18 +91,56 @@
       <div class="card card-body mb-4"><h4 class="section-title h5">Who this course is for</h4><ul class="mb-0">{% for p in course.audience_list %}<li>{{ p }}</li>{% endfor %}</ul></div>
       {% endif %}
 
+      {% if batches %}
+      <div class="card mb-4" id="batches">
+        <div class="card-body pb-0"><h4 class="section-title h5">Upcoming batches</h4></div>
+        <div class="table-responsive"><table class="table table-manage mb-0">
+          <thead><tr><th>Batch</th><th>Starts</th><th>Schedule</th><th>Seats</th><th></th></tr></thead>
+          <tbody>{% for b in batches %}<tr>
+            <td class="fw-semibold">{{ b.name }}</td><td>{{ b.start_date|date:"D, d M Y" }}</td><td class="small">{{ b.schedule|default:"—" }}</td>
+            <td>{% if b.taken >= b.capacity %}<span class="badge text-bg-danger">Full</span>{% else %}<span class="small">{{ b.capacity|sub:b.taken }} left</span>{% endif %}</td>
+            <td class="text-end">{% if b.taken < b.capacity and not enrollment and course.status == 'published' %}<a class="btn btn-sm btn-cyan" href="{% url 'enrollments:checkout' course.slug %}?batch={{ b.pk }}">Reserve seat</a>{% endif %}</td>
+          </tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% endif %}
       {% if course_testimonials %}
-      <div class="card card-body mb-4">
+      <div class="card card-body mb-4" id="reviews">
         <h4 class="section-title h5">What students say</h4>
         {% for t in course_testimonials %}<blockquote class="testimonial-inline mb-3"><p class="mb-1">“{{ t.quote }}”</p><footer class="small text-muted">– {{ t.name }}{% if t.role or t.company %}, {{ t.role }}{% if t.role and t.company %} · {% endif %}{{ t.company }}{% endif %} <span class="text-warning">{% for i in "12345"|make_list %}{% if forloop.counter <= t.rating %}★{% endif %}{% endfor %}</span></footer></blockquote>{% endfor %}
       </div>
       {% endif %}
+      {% if course.certificate_enabled %}
+      <div class="card card-body mb-4" id="certificate">
+        <div class="row align-items-center g-4">
+          <div class="col-md-6">
+            <div class="cert-preview" aria-hidden="true">
+              <div class="cert-preview-inner">
+                <div class="small text-uppercase text-muted" style="letter-spacing:.2em">Certificate of completion</div>
+                <div class="cert-preview-name">Your Name</div>
+                <div class="small">has successfully completed</div>
+                <div class="fw-bold text-primary">{{ course.title }}</div>
+                <div class="d-flex justify-content-between align-items-end mt-3 small text-muted"><span>{{ academy.site_name }}</span><i class="bi bi-qr-code fs-3 text-navy"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h4 class="section-title h5">Earn a verifiable certificate</h4>
+            <ul class="check-list ps-0 mb-0">
+              <li>Issued automatically when you complete the course</li>
+              <li>QR code lets employers verify it online</li>
+              <li>Download as PDF and add it to LinkedIn</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
       {% if course_faqs %}
-      <div class="card mb-4"><div class="card-body pb-0"><h4 class="section-title h5">Course FAQ</h4></div>
+      <div class="card mb-4" id="faq"><div class="card-body pb-0"><h4 class="section-title h5">Course FAQ</h4></div>
         <div class="accordion accordion-flush faq-accordion" id="cfaq">{% for f in course_faqs %}<div class="accordion-item"><h5 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cq{{ f.pk }}">{{ f.question }}</button></h5><div id="cq{{ f.pk }}" class="accordion-collapse collapse" data-bs-parent="#cfaq"><div class="accordion-body">{{ f.answer|rich_text }}</div></div></div>{% endfor %}</div>
       </div>
       {% endif %}
-      {% if trainers %}
+      {% if trainers %}<span id="trainer"></span>
       <div class="card card-body mb-4">
         <h4 class="section-title h5">Your trainer{{ trainers|length|pluralize }}</h4>
         {% for t in trainers %}
@@ -168,4 +211,10 @@
     </div>
   </div>
 </div>
+{% if not enrollment and course.status == 'published' %}
+<div class="mobile-cta d-lg-none">
+  <div><div class="price mb-0">{{ course.effective_price|inr }}</div>{% if course.discounted_price is not None %}<div class="price-old small">{{ course.price|inr }}</div>{% endif %}</div>
+  <div class="d-flex gap-2"><a href="#enquiry" class="btn btn-outline-primary btn-sm">Free demo</a><a href="{% url 'enrollments:checkout' course.slug %}" class="btn btn-cyan btn-sm">Enroll now</a></div>
+</div>
+{% endif %}
 {% endblock %}

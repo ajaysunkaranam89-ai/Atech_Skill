@@ -15,7 +15,7 @@ from apps.courses.models import Batch, BatchStatus, Certificate, Course, CourseC
 
 
 def home(request):
-    published = Course.objects.published().select_related("category")
+    published = Course.objects.published().with_next_batch().select_related("category")
     ctx = {
         "featured": published.filter(is_featured=True)[:6] or published[:6],
         "categories": CourseCategory.objects.filter(is_active=True, courses__status=CourseStatus.PUBLISHED)
@@ -48,7 +48,7 @@ def home(request):
 
 
 def course_list(request):
-    qs = Course.objects.published().select_related("category").prefetch_related("trainers__user")
+    qs = Course.objects.published().with_next_batch().select_related("category").prefetch_related("trainers__user")
     q = request.GET.get("q", "").strip()
     cat = request.GET.get("category", "")
     level = request.GET.get("level", "")

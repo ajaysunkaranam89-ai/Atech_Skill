@@ -203,3 +203,17 @@ a:focus-visible, .btn:focus-visible, .form-control:focus-visible, .form-select:f
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
 .reveal.is-visible { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .feature-card, .course-card { transition: none; } }
+
+/* ---------- Phase 2: course cards & course page ---------- */
+.card-ribbon { position: absolute; top: .75rem; left: .75rem; z-index: 1; background: #ff6b35; color: #fff; font-size: .75rem; font-weight: 700; padding: .25rem .6rem; border-radius: 99px; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.chip-mode { background: #eef2ff; color: #3b4fb8; }
+.next-batch { color: #0a7ea4; }
+.course-subnav { top: 66px; background: #fff; border-bottom: 1px solid #e3e9f2; z-index: 1010; box-shadow: 0 4px 14px rgba(0,15,47,.05); }
+.course-subnav a { padding: .8rem .9rem; font-weight: 600; font-size: .9rem; color: var(--ts-text); white-space: nowrap; border-bottom: 3px solid transparent; }
+.course-subnav a:hover { color: #0a7ea4; border-bottom-color: var(--ts-cyan); }
+[id="overview"], [id="curriculum"], [id="batches"], [id="trainer"], [id="reviews"], [id="certificate"], [id="faq"] { scroll-margin-top: 130px; }
+.cert-preview { background: #fff; border: 8px solid var(--ts-navy); outline: 2px solid var(--ts-cyan); outline-offset: -14px; border-radius: .4rem; padding: 1.4rem; box-shadow: var(--ts-shadow-lg); transform: rotate(-1.5deg); }
+.cert-preview-inner { text-align: center; }
+.cert-preview-name { font-family: "Poppins", serif; font-size: 1.5rem; color: var(--ts-navy); border-bottom: 2px solid var(--ts-cyan); display: inline-block; padding: 0 1rem; margin: .3rem 0; }
+.mobile-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1040; background: #fff; border-top: 1px solid #e3e9f2; box-shadow: 0 -6px 20px rgba(0,15,47,.12); padding: .6rem 1rem; display: flex; align-items: center; justify-content: space-between; }
+@media (max-width: 991.98px) { body:has(.mobile-cta) .whatsapp-float { bottom: 80px; } body:has(.mobile-cta) footer { padding-bottom: 5rem !important; } .course-subnav { top: 56px; } }

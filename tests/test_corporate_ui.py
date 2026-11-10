@@ -80,3 +80,20 @@ class CorporateUiTests(LMSTestCase):
         self.assertIn("a@b.com", self.client.get(reverse("dashboard:subscriber_export")).content.decode())
         self.login(self.trainer)
         self.assertEqual(self.client.get(reverse("dashboard:testimonials")).status_code, 403)
+
+
+class CoursePagePhase2Tests(LMSTestCase):
+    def test_cards_and_course_page(self):
+        from apps.courses.models import Batch
+
+        c = self.make_course(title="AWS Cloud")
+        c.is_featured = True
+        c.save()
+        Batch.objects.create(course=c, name="Weekend", code="AWS-W1", start_date="2026-12-05", capacity=10)
+        Batch.objects.create(course=c, name="Closed", code="AWS-X", start_date="2026-11-20", capacity=10, is_open_for_enrollment=False)
+        html = self.client.get(reverse("core:course_list")).content.decode()
+        self.assertIn("Next batch: <strong>05 Dec 2026</strong>", html)  # closed earlier batch ignored
+        self.assertIn("Popular", html)
+        page = self.client.get(c.get_absolute_url()).content.decode()
+        for text in ('class="course-subnav', 'id="batches"', "Reserve seat", 'id="certificate"', "mobile-cta"):
+            self.assertIn(text, page)

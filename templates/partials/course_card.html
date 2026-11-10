@@ -1,6 +1,7 @@
 {% load lms %}
 <div class="card course-card">
-  <a href="{{ course.get_absolute_url }}">
+  <a href="{{ course.get_absolute_url }}" class="position-relative d-block">
+    {% if course.is_featured %}<span class="card-ribbon"><i class="bi bi-fire me-1"></i>Popular</span>{% endif %}
     {% if course.thumbnail %}<img src="{{ course.thumbnail.url }}" class="course-thumb" alt="{{ course.title }}" loading="lazy">
     {% else %}<div class="course-thumb-placeholder"><i class="bi {{ course.category.icon|default:'bi-mortarboard' }}"></i></div>{% endif %}
   </a>
@@ -8,9 +9,11 @@
     <div class="d-flex gap-1 flex-wrap mb-2">
       {% if course.category %}<span class="chip">{{ course.category.name }}</span>{% endif %}
       <span class="chip"><i class="bi bi-bar-chart"></i>{{ course.get_level_display }}</span>
+      <span class="chip chip-mode"><i class="bi {% if course.mode == 'recorded' %}bi-play-circle{% else %}bi-broadcast{% endif %}"></i>{% if course.mode == 'live' %}Live{% elif course.mode == 'recorded' %}Self-paced{% else %}Live + recorded{% endif %}</span>
     </div>
     <h5 class="card-title mb-1"><a href="{{ course.get_absolute_url }}" class="text-navy">{{ course.title }}</a></h5>
     <p class="text-muted small flex-grow-1">{{ course.short_description|truncatechars:120 }}</p>
+    {% if course.next_batch_date %}<div class="small mb-2 next-batch"><i class="bi bi-calendar-event me-1"></i>Next batch: <strong>{{ course.next_batch_date|date:"d M Y" }}</strong></div>{% endif %}
     <div class="d-flex justify-content-between align-items-end">
       <div>
         {% if course.discounted_price is not None %}<div class="price-old">{{ course.price|inr }}</div>{% endif %}
