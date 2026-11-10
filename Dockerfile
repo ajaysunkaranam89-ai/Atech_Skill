@@ -22,7 +22,7 @@ COPY --chown=app:app . .
 
 # Directories that become Docker volumes must exist (owned by app) in the image.
 RUN mkdir -p /app/staticfiles /app/media /app/private_media /app/backups \
- && chown -R app:app /app/staticfiles /app/media /app/private_media /app/backups \
+ && chown app:app /app && chown -R app:app /app/staticfiles /app/media /app/private_media /app/backups \
  && tr -d "\r" < /app/docker/entrypoint.sh > /tmp/ep && cat /tmp/ep > /app/docker/entrypoint.sh && chmod +x /app/docker/entrypoint.sh
 
 USER app
