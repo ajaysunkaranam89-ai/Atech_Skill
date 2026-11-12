@@ -288,7 +288,13 @@ body:not(:has(.whatsapp-float)) .advisor-float { bottom: 18px; }
 .text-muted { color: #5b6a80 !important; }
 
 /* ---- dark mode (Bootstrap 5.3 colour modes + our surfaces) ---- */
-[data-bs-theme="dark"] { --ts-bg: #0b1424; --ts-text: #dce4ef; --ts-muted: #9fb0c6; --ts-cyan-soft: #0f3346; }
+[data-bs-theme="dark"] { --ts-bg: #0b1424; --ts-text: #dce4ef; --ts-muted: #9fb0c6; --ts-cyan-soft: #0f3346;
+  --bs-body-color: #dce4ef; --bs-body-color-rgb: 220, 228, 239; --bs-link-color: #48cae4; --bs-link-color-rgb: 72, 202, 228; --bs-link-hover-color: #90e0ef; --bs-link-hover-color-rgb: 144, 224, 239; }
+[data-bs-theme="dark"] .eyebrow, [data-bs-theme="dark"] .next-batch { color: var(--ts-cyan-2); }
+[data-bs-theme="dark"] .testimonial-card blockquote { color: var(--ts-text); }
+[data-bs-theme="dark"] .text-danger { color: #ff6b7a !important; }
+[data-bs-theme="dark"] .text-primary { color: var(--ts-cyan-2) !important; }
+[data-bs-theme="dark"] .btn-outline-cyan { --bs-btn-color: var(--ts-cyan-2); }
 [data-bs-theme="dark"] body { background: var(--ts-bg); color: var(--ts-text); }
 [data-bs-theme="dark"] .text-muted { color: #9fb0c6 !important; }
 [data-bs-theme="dark"] .card, [data-bs-theme="dark"] .feature-card, [data-bs-theme="dark"] .kpi, [data-bs-theme="dark"] .form-section,
