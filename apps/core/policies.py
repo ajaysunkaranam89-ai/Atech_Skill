@@ -66,7 +66,10 @@ These terms apply to your use of {site_name} ({site_url}), operated by {business
 ## Payments
 
 * Payments are accepted through Razorpay and UPI. Enrollment is activated only after payment is verified.
-* Prices are in Indian Rupees (INR).
+* Prices are in Indian Rupees (INR). Applicable GST is shown at checkout and on your invoice.
+* Course fees are payable **in full, upfront**, at the time of enrollment. We do not offer instalments, EMI or part-payment plans.
+* If a payment fails but the amount is debited, or you are charged twice, the extra amount is refunded in full to the original payment method.
+* Please contact us before raising a chargeback with your bank. Access may be paused while a payment dispute is under review.
 
 ## Intellectual property
 
@@ -75,6 +78,10 @@ All videos, notes, assignments and other materials are owned by {business}. You 
 ## Conduct
 
 Be respectful in live classes and communications. We may remove learners who disrupt classes or misuse the platform.
+
+## Ethical use of security skills
+
+Scanning, penetration-testing and firewall techniques taught in our Cybersecurity, Firewall and DevSecOps courses must be practised only on the academy's lab environments, or on systems you own or have written permission to test. Misuse may lead to removal without refund and may be an offence under the Information Technology Act, 2000.
 
 ## Certificates
 
@@ -90,7 +97,11 @@ We may update these terms. Continued use after changes means you accept them.
 
 ## Governing law
 
-These terms are governed by the laws of India.
+These terms are governed by the laws of India. Courts at Visakhapatnam, Andhra Pradesh, shall have exclusive jurisdiction.
+
+## Grievances
+
+Send complaints to {email}. We acknowledge every complaint within 48 hours and aim to resolve it within 30 days.
 
 ## Contact
 
@@ -104,6 +115,8 @@ REFUND = """Last updated: {updated}
 * You may request a full refund within **{days} days** of enrollment, provided you have attended no more than 2 live classes and watched less than 20% of the recorded content.
 * After {days} days, or once the above limits are exceeded, fees are non-refundable.
 * If we cancel a batch or course, you will receive a full refund or a free transfer to another batch, at your choice.
+* Failed or duplicate payments are always refunded in full, regardless of the refund window.
+* Fees are paid in full at enrollment; we do not offer instalment or EMI plans.
 
 ## How to request a refund
 
